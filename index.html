@@ -187,14 +187,64 @@
         let expenseChart = null;
 
         const defaultData = {
-            "Pagamentos Sítio (22/08/2025)": [{ name: "DJ/Som e iluminação", value: 1800.00, completed: true, date: "2025-08-22", responsible: "N/A" }],
-            "Serviços Sítio (Setembro)": [{ name: "Limpeza", value: 300.00, completed: false, date: "2025-09-30", responsible: "Ambos" }],
-            "Pagamentos Futuros (Out/Nov/Dez)": [{ name: "Bebida", value: 1512.00, completed: false, date: "2025-10-31", responsible: "N/A" }],
-            "Fornecedores Pendentes": [{ name: "Músicos", value: 1500.00, completed: false, date: "", responsible: "N/A" }],
-            "Tarefas (Setembro - Cartão Pedro)": [{ name: "Envelopes para os convites", value: 0, completed: false, date: "2025-09-30", responsible: "Pedro" }],
-            "Tarefas (Outubro - Cartão Camily)": [{ name: "Roupa do Max", value: 0, completed: false, date: "2025-10-31", responsible: "Camily" }],
-            "Tarefas (Novembro)": [{ name: "Quadro receptivo entrada", value: 0, completed: false, date: "2025-11-30", responsible: "N/A" }],
-            "Tarefas (Dezembro)": [{ name: "Impressão centro de mesas", value: 0, completed: false, date: "2025-12-31", responsible: "N/A" }]
+            "Pagamentos Sítio (22/08/2025)": [
+                { "name": "DJ/Som e iluminação", "value": 1800.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" },
+                { "name": "Pista de dança", "value": 1200.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" },
+                { "name": "Bar de drinks", "value": 1400.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" },
+                { "name": "Casa da noiva", "value": 500.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" }
+            ],
+            "Serviços Sítio (Setembro)": [
+                { "name": "Limpeza", "value": 300.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" },
+                { "name": "Apoio", "value": 250.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" },
+                { "name": "Portaria", "value": 250.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" },
+                { "name": "Garçons", "value": 880.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" }
+            ],
+            "Pagamentos Futuros (Out/Nov/Dez)": [
+                { "name": "Bebida", "value": 1512.00, "completed": false, "date": "2025-10-31", "responsible": "N/A" },
+                { "name": "Gastronomia", "value": 7120.00, "completed": false, "date": "2025-11-30", "responsible": "N/A" },
+                { "name": "Decoração", "value": 9000.00, "completed": false, "date": "2025-12-31", "responsible": "N/A" }
+            ],
+            "Fornecedores Pendentes": [
+                { "name": "Músicos", "value": 1500.00, "completed": false, "date": "", "responsible": "N/A" },
+                { "name": "Chopp 50L", "value": 700.00, "completed": false, "date": "", "responsible": "N/A" },
+                { "name": "Dia da Noiva", "value": 700.00, "completed": false, "date": "", "responsible": "Camily" },
+                { "name": "Cabelo (Dia da Noiva)", "value": 280.00, "completed": false, "date": "", "responsible": "Camily" },
+                { "name": "Telão Pré-wedding?", "value": 0, "completed": false, "date": "", "responsible": "N/A" },
+                { "name": "Polaroid", "value": 0, "completed": false, "date": "", "responsible": "N/A" },
+                { "name": "Arco?", "value": 0, "completed": false, "date": "", "responsible": "N/A" },
+                { "name": "Vestido noiva", "value": 0, "completed": false, "date": "", "responsible": "Camily" },
+                { "name": "Sapato noiva", "value": 0, "completed": false, "date": "", "responsible": "Camily" }
+            ],
+            "Tarefas (Setembro - Cartão Pedro)": [
+                { "name": "Envelopes para os convites", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" },
+                { "name": "Lacres para convites", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" },
+                { "name": "Mil pétalas", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" },
+                { "name": "Porta Alianças", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" },
+                { "name": "Lenços lágrimas de alegria", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" },
+                { "name": "Acessórios Polícia Guilherme", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }
+            ],
+            "Tarefas (Outubro - Cartão Camily)": [
+                { "name": "Roupa do Max", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" },
+                { "name": "Coleira preta Max", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" },
+                { "name": "Caixa com cadeado - gravata", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" },
+                { "name": "Roupão das madrinhas", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" },
+                { "name": "Roupão das mães", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" }
+            ],
+            "Tarefas (Novembro)": [
+                { "name": "Quadro receptivo entrada", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" },
+                { "name": "Lembrancinhas – Velas", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" },
+                { "name": "Bem casados", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" },
+                { "name": "Doces tradicionais", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" },
+                { "name": "Bolo – Mãe Beta", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Mãe Beta" },
+                { "name": "Topo do bolo – Suelen", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Suelen" },
+                { "name": "Doces finos – Mãe Cristina", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Mãe Cristina" }
+            ],
+            "Tarefas (Dezembro)": [
+                { "name": "Impressão centro de mesas", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" },
+                { "name": "Impressão adesivos chaves da caixa", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" },
+                { "name": "Impressão lágrimas de alegria", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" },
+                { "name": "QR CODE pix gravata", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" }
+            ]
         };
 
         const saveData = async () => {
