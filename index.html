@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SortableJS Library for Drag and Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .task-item.completed .item-name,
@@ -46,6 +48,21 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        /* Styles for drag and drop */
+        .category-card {
+            transition: box-shadow 0.2s;
+        }
+        .category-card.sortable-ghost {
+            opacity: 0.4;
+            background: #dbeafe;
+        }
+        .task-item.sortable-ghost {
+            opacity: 0.4;
+            background: #eff6ff;
+        }
+        .category-handle {
+            cursor: grab;
         }
     </style>
 </head>
@@ -195,22 +212,12 @@
 
         const renderChart = () => {
             const ctx = chartCanvas.getContext('2d');
-            const labels = [];
-            const data = [];
-            const backgroundColors = [];
-
-            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316'];
-
-            let colorIndex = 0;
-            for (const categoryName in expenseData) {
-                const total = (expenseData[categoryName] || []).reduce((sum, item) => sum + (item.value || 0), 0);
-                if (total > 0) {
-                    labels.push(categoryName);
-                    data.push(total);
-                    backgroundColors.push(colors[colorIndex % colors.length]);
-                    colorIndex++;
-                }
-            }
+            const labels = Object.keys(expenseData);
+            const data = labels.map(categoryName => 
+                (expenseData[categoryName] || []).reduce((sum, item) => sum + (item.value || 0), 0)
+            );
+            
+            const backgroundColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#FBBF24', '#22C55E', '#38BDF8', '#FB923C'];
 
             if (expenseChart) {
                 expenseChart.destroy();
@@ -223,31 +230,13 @@
                     datasets: [{
                         label: 'Gastos por Categoria',
                         data: data,
-                        backgroundColor: backgroundColors,
+                        backgroundColor: (context) => backgroundColors[context.dataIndex % backgroundColors.length],
                         hoverOffset: 4
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += formatCurrency(context.parsed);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    }
+                    plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } }
                 }
             });
         };
@@ -265,7 +254,8 @@
                 categorySelect.appendChild(option);
 
                 const categoryCard = document.createElement('div');
-                categoryCard.className = 'bg-white p-6 rounded-2xl shadow-lg';
+                categoryCard.className = 'bg-white p-6 rounded-2xl shadow-lg category-card';
+                categoryCard.dataset.categoryName = categoryName;
                 
                 let categoryTotal = 0;
                 let itemsHtml = '';
@@ -277,7 +267,7 @@
                     const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem data';
 
                     itemsHtml += `
-                        <li class="task-item ${item.completed ? 'completed' : ''}" data-category="${categoryName}" data-index="${index}">
+                        <li class="task-item ${item.completed ? 'completed' : ''}" data-item-id="${categoryName}-${index}">
                             <div class="view-mode flex items-center justify-between py-2 border-b">
                                 <div class="flex items-center flex-grow"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}>
                                     <div class="ml-3 flex-grow"><p class="item-name">${item.name}</p><p class="text-sm text-gray-500"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div>
@@ -291,13 +281,55 @@
                         </li>`;
                 });
                 grandTotal += categoryTotal;
-                categoryCard.innerHTML = `<h3 class="text-2xl font-bold text-gray-900 mb-4 flex justify-between items-center"><span>${categoryName}</span><div class="flex items-center"><span class="text-xl text-blue-600 mr-3">${formatCurrency(categoryTotal)}</span><button class="delete-category-btn text-gray-400 hover:text-red-700" data-category-name="${categoryName}"><i class="fas fa-trash-alt"></i></button></div></h3><ul class="space-y-2">${itemsHtml}</ul>`;
+                categoryCard.innerHTML = `<h3 class="category-handle text-2xl font-bold text-gray-900 mb-4 flex justify-between items-center"><span>${categoryName}</span><div class="flex items-center"><span class="text-xl text-blue-600 mr-3">${formatCurrency(categoryTotal)}</span><button class="delete-category-btn text-gray-400 hover:text-red-700" data-category-name="${categoryName}"><i class="fas fa-trash-alt"></i></button></div></h3><ul class="space-y-2 item-list">${itemsHtml}</ul>`;
                 categoriesContainer.appendChild(categoryCard);
             }
             document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
             document.getElementById('paid-total').textContent = formatCurrency(paidTotal);
             document.getElementById('pending-total').textContent = formatCurrency(grandTotal - paidTotal);
+            
+            initSortable();
             renderChart();
+        };
+
+        const initSortable = () => {
+            // Make categories draggable
+            new Sortable(categoriesContainer, {
+                animation: 150,
+                handle: '.category-handle',
+                onEnd: (evt) => {
+                    const newOrder = Array.from(categoriesContainer.children).map(card => card.dataset.categoryName);
+                    const reorderedData = {};
+                    newOrder.forEach(name => {
+                        reorderedData[name] = expenseData[name];
+                    });
+                    expenseData = reorderedData;
+                    saveData();
+                }
+            });
+
+            // Make items in each category draggable
+            document.querySelectorAll('.item-list').forEach(list => {
+                new Sortable(list, {
+                    group: 'shared', // Allow items to be moved between lists
+                    animation: 150,
+                    onEnd: (evt) => {
+                        const itemEl = evt.item;
+                        const fromCategory = evt.from.closest('.category-card').dataset.categoryName;
+                        const toCategory = evt.to.closest('.category-card').dataset.categoryName;
+                        const oldIndex = evt.oldIndex;
+                        const newIndex = evt.newIndex;
+
+                        // Remove item from old category
+                        const [movedItem] = expenseData[fromCategory].splice(oldIndex, 1);
+                        // Add item to new category
+                        if (!expenseData[toCategory]) expenseData[toCategory] = [];
+                        expenseData[toCategory].splice(newIndex, 0, movedItem);
+                        
+                        saveData();
+                    }
+                });
+            });
         };
 
         const startApp = (weddingId) => {
@@ -342,8 +374,9 @@
             const categoryBtn = e.target.closest('.delete-category-btn');
 
             if (taskItem) {
-                const category = taskItem.dataset.category;
-                const index = parseInt(taskItem.dataset.index);
+                const [category, itemIndex] = taskItem.dataset.itemId.split('-');
+                const index = parseInt(itemIndex);
+
                 if (e.target.closest('.edit-btn')) {
                     taskItem.querySelector('.view-mode').classList.add('hidden');
                     taskItem.querySelector('.edit-mode').classList.remove('hidden');
