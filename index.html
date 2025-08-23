@@ -26,7 +26,7 @@
             width: 100%;
         }
         #app-loader {
-            display: none; /* Hidden by default */
+            display: flex; /* Shown by default now */
             position: fixed;
             top: 0;
             left: 0;
@@ -68,32 +68,17 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Config Notice -->
-    <div id="config-notice" class="hidden fixed top-0 left-0 w-full p-4 bg-red-600 text-white text-center z-[10000]">
-        <strong>Atenção:</strong> A configuração do Firebase está em falta. Por favor, siga as instruções no código para adicionar as suas chaves e fazer a aplicação funcionar.
-    </div>
-
     <!-- App Loader -->
-    <div id="app-loader" class="flex">
+    <div id="app-loader">
         <div class="loader"></div>
     </div>
 
-    <!-- Login/ID Screen -->
-    <div id="login-screen" class="container mx-auto p-8 max-w-md mt-20 bg-white rounded-2xl shadow-xl">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-2">Aceder ao Planeamento</h2>
-        <p class="text-center text-gray-600 mb-6">Insira um ID para carregar ou criar um novo planeamento partilhado.</p>
-        <div class="space-y-4">
-            <input type="text" id="wedding-id-input" placeholder="pemily1601" value="pemily1601" class="w-full p-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-lg">
-            <button id="load-plan-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg">Carregar ou Criar</button>
-        </div>
-    </div>
-
-    <!-- Main App Screen (hidden by default) -->
+    <!-- Main App Screen -->
     <div id="main-app" class="hidden">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
             <header class="text-center mb-10">
                 <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Planeamento de Gastos do Casamento</h1>
-                <p class="text-gray-600 mt-2">ID Partilhado: <strong id="shared-id-display" class="text-blue-600"></strong></p>
+                <p class="text-gray-600 mt-2">ID Partilhado: <strong id="shared-id-display" class="text-blue-600">pemily1601</strong></p>
             </header>
 
             <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -135,11 +120,6 @@
                             <button id="add-item-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Adicionar Item</button>
                         </div>
                     </div>
-                    
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Opções</h3>
-                        <button id="logout-btn" class="w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Mudar de Planeamento</button>
-                    </div>
                 </aside>
             </main>
         </div>
@@ -161,10 +141,8 @@
         };
 
         // --- DOM ELEMENTS ---
-        const loginScreen = document.getElementById('login-screen');
+        const appLoader = document.getElementById('app-loader');
         const mainApp = document.getElementById('main-app');
-        const weddingIdInput = document.getElementById('wedding-id-input');
-        const loadPlanBtn = document.getElementById('load-plan-btn');
         const sharedIdDisplay = document.getElementById('shared-id-display');
         const categoriesContainer = document.getElementById('categories-container');
         const categorySelect = document.getElementById('new-item-category');
@@ -173,7 +151,6 @@
         const newItemResponsibleInput = document.getElementById('new-item-responsible');
         const newItemDateInput = document.getElementById('new-item-date');
         const newItemValueInput = document.getElementById('new-item-value');
-        const logoutBtn = document.getElementById('logout-btn');
         const newCategoryNameInput = document.getElementById('new-category-name');
         const addCategoryBtn = document.getElementById('add-category-btn');
         const chartCanvas = document.getElementById('expense-chart');
@@ -182,7 +159,7 @@
         const db = getFirestore(app);
 
         let expenseData;
-        let currentWeddingId = null;
+        const currentWeddingId = 'pemily1601'; // ID is now fixed
         let unsubscribe; 
         let expenseChart = null;
 
@@ -343,7 +320,6 @@
         };
 
         const initSortable = () => {
-            // Make categories draggable
             new Sortable(categoriesContainer, {
                 animation: 150,
                 handle: '.category-handle',
@@ -358,21 +334,17 @@
                 }
             });
 
-            // Make items in each category draggable
             document.querySelectorAll('.item-list').forEach(list => {
                 new Sortable(list, {
-                    group: 'shared', // Allow items to be moved between lists
+                    group: 'shared',
                     animation: 150,
                     onEnd: (evt) => {
-                        const itemEl = evt.item;
                         const fromCategory = evt.from.closest('.category-card').dataset.categoryName;
                         const toCategory = evt.to.closest('.category-card').dataset.categoryName;
                         const oldIndex = evt.oldIndex;
                         const newIndex = evt.newIndex;
 
-                        // Remove item from old category
                         const [movedItem] = expenseData[fromCategory].splice(oldIndex, 1);
-                        // Add item to new category
                         if (!expenseData[toCategory]) expenseData[toCategory] = [];
                         expenseData[toCategory].splice(newIndex, 0, movedItem);
                         
@@ -383,13 +355,10 @@
         };
 
         const startApp = (weddingId) => {
-            currentWeddingId = weddingId;
-            localStorage.setItem('currentWeddingId', weddingId);
-            sharedIdDisplay.textContent = weddingId;
-            loginScreen.classList.add('hidden');
             mainApp.classList.remove('hidden');
+            appLoader.style.display = 'flex';
 
-            const docRef = doc(db, "weddings", currentWeddingId);
+            const docRef = doc(db, "weddings", weddingId);
             unsubscribe = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     expenseData = docSnap.data().expenses;
@@ -398,26 +367,13 @@
                     saveData(); 
                 }
                 render();
+                appLoader.style.display = 'none';
             }, (error) => {
                 console.error("Firestore snapshot error:", error);
                 alert("Falha na ligação à base de dados. Verifique a sua conexão e as regras do Firestore.");
-                logoutBtn.click();
+                appLoader.style.display = 'none';
             });
         };
-
-        loadPlanBtn.addEventListener('click', async () => {
-            const weddingId = weddingIdInput.value.trim().toLowerCase().replace(/\s+/g, '-');
-            if (!weddingId) return alert("Por favor, insira um ID.");
-            startApp(weddingId);
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            if (unsubscribe) unsubscribe();
-            currentWeddingId = null;
-            localStorage.removeItem('currentWeddingId');
-            mainApp.classList.add('hidden');
-            loginScreen.classList.remove('hidden');
-        });
 
         categoriesContainer.addEventListener('click', (e) => {
             const taskItem = e.target.closest('.task-item');
@@ -486,13 +442,10 @@
             }
         });
 
-        const savedId = localStorage.getItem('currentWeddingId');
-        if (savedId) {
-            startApp(savedId);
-        } else {
-            loginScreen.classList.remove('hidden');
-            document.getElementById('app-loader').style.display = 'none';
-        }
+        // --- INITIALIZATION ---
+        // Automatically start the app with the fixed ID
+        startApp(currentWeddingId);
+
     </script>
 </body>
 </html>
