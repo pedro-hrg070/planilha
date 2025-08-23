@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controlo de Gastos - Casamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .task-item.completed .item-name,
+        .task-item.completed .item-date,
+        .task-item.completed .item-responsible {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+        .edit-input {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            width: 100%;
+        }
+        #app-loader {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Config Notice -->
+    <div id="config-notice" class="hidden fixed top-0 left-0 w-full p-4 bg-red-600 text-white text-center z-[10000]">
+        <strong>Atenção:</strong> A configuração do Firebase está em falta. Por favor, siga as instruções no código para adicionar as suas chaves e fazer a aplicação funcionar.
+    </div>
+
+    <!-- App Loader -->
+    <div id="app-loader" class="flex">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Login/ID Screen -->
+    <div id="login-screen" class="container mx-auto p-8 max-w-md mt-20 bg-white rounded-2xl shadow-xl">
+        <h2 class="text-3xl font-bold text-center text-gray-900 mb-2">Aceder ao Planeamento</h2>
+        <p class="text-center text-gray-600 mb-6">Insira um ID para carregar ou criar um novo planeamento partilhado.</p>
+        <div class="space-y-4">
+            <input type="text" id="wedding-id-input" placeholder="pemily1601" value="pemily1601" class="w-full p-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-lg">
+            <button id="load-plan-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg">Carregar ou Criar</button>
+        </div>
+    </div>
+
+    <!-- Main App Screen (hidden by default) -->
+    <div id="main-app" class="hidden">
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
+            <header class="text-center mb-10">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Planeamento de Gastos do Casamento</h1>
+                <p class="text-gray-600 mt-2">ID Partilhado: <strong id="shared-id-display" class="text-blue-600"></strong></p>
+            </header>
+
+            <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Coluna de Categorias -->
+                <div class="lg:col-span-2 space-y-8" id="categories-container"></div>
+
+                <!-- Coluna de Resumo e Ações -->
+                <aside class="md:col-span-1 lg:col-span-1 space-y-8 sticky top-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Resumo Geral</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Custo Total:</span><span id="grand-total" class="font-bold text-blue-600">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Total Pago:</span><span id="paid-total" class="font-bold text-green-600">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Total Pendente:</span><span id="pending-total" class="font-bold text-red-600">R$ 0,00</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Distribuição de Gastos</h3>
+                        <canvas id="expense-chart"></canvas>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Adicionar Nova Categoria</h3>
+                        <div class="flex space-x-2">
+                            <input type="text" id="new-category-name" placeholder="Ex: Lua de Mel" class="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            <button id="add-category-btn" class="bg-green-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-700 transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Adicionar Novo Gasto</h3>
+                        <div class="space-y-4">
+                            <div><label for="new-item-category" class="block text-sm font-medium text-gray-700">Categoria</label><select id="new-item-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select></div>
+                            <div><label for="new-item-name" class="block text-sm font-medium text-gray-700">Nome do Item</label><input type="text" id="new-item-name" placeholder="Ex: Fotógrafo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <div><label for="new-item-responsible" class="block text-sm font-medium text-gray-700">Responsável</label><input type="text" id="new-item-responsible" placeholder="Ex: Pedro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <div><label for="new-item-date" class="block text-sm font-medium text-gray-700">Data</label><input type="date" id="new-item-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <div><label for="new-item-value" class="block text-sm font-medium text-gray-700">Valor (R$)</label><input type="number" id="new-item-value" placeholder="1500.00" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <button id="add-item-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Adicionar Item</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Opções</h3>
+                        <button id="logout-btn" class="w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Mudar de Planeamento</button>
+                    </div>
+                </aside>
+            </main>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzACPqrKvn3R1zeK4kiVK5e3MzjJ7UDQI",
+            authDomain: "controle-de-gastos-pemily.firebaseapp.com",
+            projectId: "controle-de-gastos-pemily",
+            storageBucket: "controle-de-gastos-pemily.appspot.com",
+            messagingSenderId: "819710772267",
+            appId: "1:819710772267:web:ff4dde111635a6eeef166e",
+            measurementId: "G-88JFJ6YTW1"
+        };
+
+        // --- DOM ELEMENTS ---
+        const loginScreen = document.getElementById('login-screen');
+        const mainApp = document.getElementById('main-app');
+        const weddingIdInput = document.getElementById('wedding-id-input');
+        const loadPlanBtn = document.getElementById('load-plan-btn');
+        const sharedIdDisplay = document.getElementById('shared-id-display');
+        const categoriesContainer = document.getElementById('categories-container');
+        const categorySelect = document.getElementById('new-item-category');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const newItemNameInput = document.getElementById('new-item-name');
+        const newItemResponsibleInput = document.getElementById('new-item-responsible');
+        const newItemDateInput = document.getElementById('new-item-date');
+        const newItemValueInput = document.getElementById('new-item-value');
+        const logoutBtn = document.getElementById('logout-btn');
+        const newCategoryNameInput = document.getElementById('new-category-name');
+        const addCategoryBtn = document.getElementById('add-category-btn');
+        const chartCanvas = document.getElementById('expense-chart');
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let expenseData;
+        let currentWeddingId = null;
+        let unsubscribe; 
+        let expenseChart = null;
+
+        const defaultData = {
+            "Pagamentos Sítio (22/08/2025)": [{ name: "DJ/Som e iluminação", value: 1800.00, completed: true, date: "2025-08-22", responsible: "N/A" }],
+            "Serviços Sítio (Setembro)": [{ name: "Limpeza", value: 300.00, completed: false, date: "2025-09-30", responsible: "Ambos" }],
+            "Pagamentos Futuros (Out/Nov/Dez)": [{ name: "Bebida", value: 1512.00, completed: false, date: "2025-10-31", responsible: "N/A" }],
+            "Fornecedores Pendentes": [{ name: "Músicos", value: 1500.00, completed: false, date: "", responsible: "N/A" }],
+            "Tarefas (Setembro - Cartão Pedro)": [{ name: "Envelopes para os convites", value: 0, completed: false, date: "2025-09-30", responsible: "Pedro" }],
+            "Tarefas (Outubro - Cartão Camily)": [{ name: "Roupa do Max", value: 0, completed: false, date: "2025-10-31", responsible: "Camily" }],
+            "Tarefas (Novembro)": [{ name: "Quadro receptivo entrada", value: 0, completed: false, date: "2025-11-30", responsible: "N/A" }],
+            "Tarefas (Dezembro)": [{ name: "Impressão centro de mesas", value: 0, completed: false, date: "2025-12-31", responsible: "N/A" }]
+        };
+
+        const saveData = async () => {
+            if (!currentWeddingId) return;
+            try {
+                const docRef = doc(db, "weddings", currentWeddingId);
+                await setDoc(docRef, { expenses: expenseData });
+            } catch (error) {
+                console.error("Error saving data: ", error);
+                alert("Não foi possível salvar os dados.");
+            }
+        };
+
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+
+        const renderChart = () => {
+            const ctx = chartCanvas.getContext('2d');
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316'];
+
+            let colorIndex = 0;
+            for (const categoryName in expenseData) {
+                const total = (expenseData[categoryName] || []).reduce((sum, item) => sum + (item.value || 0), 0);
+                if (total > 0) {
+                    labels.push(categoryName);
+                    data.push(total);
+                    backgroundColors.push(colors[colorIndex % colors.length]);
+                    colorIndex++;
+                }
+            }
+
+            if (expenseChart) {
+                expenseChart.destroy();
+            }
+
+            expenseChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gastos por Categoria',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const render = () => {
+            if (!expenseData) return;
+            categoriesContainer.innerHTML = '';
+            categorySelect.innerHTML = '';
+            let grandTotal = 0, paidTotal = 0;
+
+            for (const categoryName in expenseData) {
+                const option = document.createElement('option');
+                option.value = categoryName;
+                option.textContent = categoryName;
+                categorySelect.appendChild(option);
+
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'bg-white p-6 rounded-2xl shadow-lg';
+                
+                let categoryTotal = 0;
+                let itemsHtml = '';
+
+                (expenseData[categoryName] || []).forEach((item, index) => {
+                    categoryTotal += item.value || 0;
+                    if(item.completed) paidTotal += item.value || 0;
+                    
+                    const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem data';
+
+                    itemsHtml += `
+                        <li class="task-item ${item.completed ? 'completed' : ''}" data-category="${categoryName}" data-index="${index}">
+                            <div class="view-mode flex items-center justify-between py-2 border-b">
+                                <div class="flex items-center flex-grow"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}>
+                                    <div class="ml-3 flex-grow"><p class="item-name">${item.name}</p><p class="text-sm text-gray-500"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div>
+                                </div>
+                                <div class="flex items-center flex-shrink-0"><span class="font-semibold mr-4 item-value">${formatCurrency(item.value)}</span><button class="edit-btn text-gray-500 hover:text-blue-700 mr-2"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></div>
+                            </div>
+                            <div class="edit-mode hidden flex items-center justify-between py-2 border-b">
+                                <div class="flex-grow mr-2 space-y-2"><input type="text" class="edit-input edit-name" value="${item.name}"><input type="text" class="edit-input edit-responsible" value="${item.responsible || ''}" placeholder="Responsável"><input type="date" class="edit-input edit-date" value="${item.date}"><input type="number" step="0.01" class="edit-input edit-value" value="${item.value}"></div>
+                                <button class="save-btn text-green-500 hover:text-green-700"><i class="fas fa-save fa-lg"></i></button>
+                            </div>
+                        </li>`;
+                });
+                grandTotal += categoryTotal;
+                categoryCard.innerHTML = `<h3 class="text-2xl font-bold text-gray-900 mb-4 flex justify-between items-center"><span>${categoryName}</span><div class="flex items-center"><span class="text-xl text-blue-600 mr-3">${formatCurrency(categoryTotal)}</span><button class="delete-category-btn text-gray-400 hover:text-red-700" data-category-name="${categoryName}"><i class="fas fa-trash-alt"></i></button></div></h3><ul class="space-y-2">${itemsHtml}</ul>`;
+                categoriesContainer.appendChild(categoryCard);
+            }
+            document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+            document.getElementById('paid-total').textContent = formatCurrency(paidTotal);
+            document.getElementById('pending-total').textContent = formatCurrency(grandTotal - paidTotal);
+            renderChart();
+        };
+
+        const startApp = (weddingId) => {
+            currentWeddingId = weddingId;
+            localStorage.setItem('currentWeddingId', weddingId);
+            sharedIdDisplay.textContent = weddingId;
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+
+            const docRef = doc(db, "weddings", currentWeddingId);
+            unsubscribe = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    expenseData = docSnap.data().expenses;
+                } else {
+                    expenseData = JSON.parse(JSON.stringify(defaultData));
+                    saveData(); 
+                }
+                render();
+            }, (error) => {
+                console.error("Firestore snapshot error:", error);
+                alert("Falha na ligação à base de dados. Verifique a sua conexão e as regras do Firestore.");
+                logoutBtn.click();
+            });
+        };
+
+        loadPlanBtn.addEventListener('click', async () => {
+            const weddingId = weddingIdInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+            if (!weddingId) return alert("Por favor, insira um ID.");
+            startApp(weddingId);
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            if (unsubscribe) unsubscribe();
+            currentWeddingId = null;
+            localStorage.removeItem('currentWeddingId');
+            mainApp.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+        });
+
+        categoriesContainer.addEventListener('click', (e) => {
+            const taskItem = e.target.closest('.task-item');
+            const categoryBtn = e.target.closest('.delete-category-btn');
+
+            if (taskItem) {
+                const category = taskItem.dataset.category;
+                const index = parseInt(taskItem.dataset.index);
+                if (e.target.closest('.edit-btn')) {
+                    taskItem.querySelector('.view-mode').classList.add('hidden');
+                    taskItem.querySelector('.edit-mode').classList.remove('hidden');
+                } else if (e.target.closest('.save-btn')) {
+                    const editMode = taskItem.querySelector('.edit-mode');
+                    expenseData[category][index].name = editMode.querySelector('.edit-name').value;
+                    expenseData[category][index].responsible = editMode.querySelector('.edit-responsible').value;
+                    expenseData[category][index].date = editMode.querySelector('.edit-date').value;
+                    expenseData[category][index].value = parseFloat(editMode.querySelector('.edit-value').value) || 0;
+                    saveData();
+                } else if (e.target.closest('.delete-btn')) {
+                    expenseData[category].splice(index, 1);
+                    saveData();
+                } else if (e.target.classList.contains('item-checkbox')) {
+                    expenseData[category][index].completed = e.target.checked;
+                    saveData();
+                }
+            } else if (categoryBtn) {
+                const categoryNameToDelete = categoryBtn.dataset.categoryName;
+                if (confirm(`Tem a certeza que quer apagar a categoria "${categoryNameToDelete}" e todos os seus itens?`)) {
+                    delete expenseData[categoryNameToDelete];
+                    saveData();
+                }
+            }
+        });
+
+        addCategoryBtn.addEventListener('click', () => {
+            const name = newCategoryNameInput.value.trim();
+            if (name && !expenseData.hasOwnProperty(name)) {
+                expenseData[name] = [];
+                newCategoryNameInput.value = '';
+                saveData();
+            } else if (name) {
+                alert('Essa categoria já existe.');
+            } else {
+                alert('Por favor, insira um nome para a categoria.');
+            }
+        });
+
+        addItemBtn.addEventListener('click', () => {
+            const category = categorySelect.value;
+            const name = newItemNameInput.value.trim();
+            const responsible = newItemResponsibleInput.value.trim();
+            const date = newItemDateInput.value;
+            const value = parseFloat(newItemValueInput.value);
+
+            if (name && !isNaN(value) && category) {
+                if (!expenseData[category]) expenseData[category] = [];
+                expenseData[category].push({ name, value, date, responsible, completed: false });
+                newItemNameInput.value = '';
+                newItemResponsibleInput.value = '';
+                newItemValueInput.value = '';
+                newItemDateInput.value = '';
+                saveData();
+            } else {
+                alert('Por favor, preencha todos os campos corretamente.');
+            }
+        });
+
+        const savedId = localStorage.getItem('currentWeddingId');
+        if (savedId) {
+            startApp(savedId);
+        } else {
+            loginScreen.classList.remove('hidden');
+            document.getElementById('app-loader').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
