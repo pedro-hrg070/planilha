@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SortableJS Library for Drag and Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script>
+        // Configuração do Tailwind CSS para o modo escuro
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .task-item.completed .item-name,
@@ -18,6 +24,11 @@
         .task-item.completed .item-responsible {
             text-decoration: line-through;
             color: #9ca3af;
+        }
+        .dark .task-item.completed .item-name,
+        .dark .task-item.completed .item-date,
+        .dark .task-item.completed .item-responsible {
+            color: #4b5563;
         }
         .edit-input {
             border: 1px solid #d1d5db;
@@ -37,6 +48,9 @@
             justify-content: center;
             align-items: center;
         }
+        .dark #app-loader {
+             background-color: rgba(17, 24, 39, 0.8);
+        }
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -50,9 +64,6 @@
             100% { transform: rotate(360deg); }
         }
         /* Styles for drag and drop */
-        .category-card {
-            transition: box-shadow 0.2s;
-        }
         .category-card.sortable-ghost {
             opacity: 0.4;
             background: #dbeafe;
@@ -64,9 +75,26 @@
         .category-handle {
             cursor: grab;
         }
+        .task-item {
+            cursor: grab;
+        }
+        /* Visual feedback for drag delay */
+        .sortable-delay-start .task-item,
+        .sortable-delay-start .category-handle {
+            cursor: grabbing !important;
+        }
+        .task-item.sortable-delay-start {
+            background-color: #e0f2fe !important; /* light blue */
+        }
+        .dark .task-item.sortable-delay-start {
+            background-color: #374151 !important; /* dark blue-gray */
+        }
+        .category-title-text {
+            cursor: text;
+        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
     <!-- App Loader -->
     <div id="app-loader">
@@ -75,48 +103,50 @@
 
     <!-- Main App Screen -->
     <div id="main-app" class="hidden">
-        <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
-            <header class="text-center mb-10">
-                <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Planeamento de Gastos do Casamento</h1>
-                <p class="text-gray-600 mt-2">ID Partilhado: <strong id="shared-id-display" class="text-blue-600">pemily1601</strong></p>
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+            <header class="text-center mb-10 relative">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">Planeamento de Gastos do Casamento</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">ID Partilhado: <strong id="shared-id-display" class="text-blue-600 dark:text-blue-400">pemily1601</strong></p>
+                <button id="theme-toggle" class="absolute top-0 right-0 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                    <i id="theme-toggle-dark-icon" class="fas fa-moon text-xl hidden"></i>
+                    <i id="theme-toggle-light-icon" class="fas fa-sun text-xl hidden"></i>
+                </button>
             </header>
 
-            <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Coluna de Categorias -->
                 <div class="lg:col-span-2 space-y-8" id="categories-container"></div>
 
                 <!-- Coluna de Resumo e Ações -->
-                <aside class="md:col-span-1 lg:col-span-1 space-y-8 sticky top-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Resumo Geral</h3>
+                <aside class="col-span-1 space-y-8 lg:sticky lg:top-8">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Resumo Geral</h3>
                         <div class="space-y-3">
-                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Custo Total:</span><span id="grand-total" class="font-bold text-blue-600">R$ 0,00</span></div>
-                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Total Pago:</span><span id="paid-total" class="font-bold text-green-600">R$ 0,00</span></div>
-                            <div class="flex justify-between items-center text-lg"><span class="font-medium">Total Pendente:</span><span id="pending-total" class="font-bold text-red-600">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium text-gray-700 dark:text-gray-300">Custo Total:</span><span id="grand-total" class="font-bold text-blue-600 dark:text-blue-400">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium text-gray-700 dark:text-gray-300">Total Pago:</span><span id="paid-total" class="font-bold text-green-600 dark:text-green-400">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center text-lg"><span class="font-medium text-gray-700 dark:text-gray-300">Total Pendente:</span><span id="pending-total" class="font-bold text-red-600 dark:text-red-400">R$ 0,00</span></div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Distribuição de Gastos</h3>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Distribuição de Gastos</h3>
                         <canvas id="expense-chart"></canvas>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Adicionar Nova Categoria</h3>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Adicionar Nova Categoria</h3>
                         <div class="flex space-x-2">
-                            <input type="text" id="new-category-name" placeholder="Ex: Lua de Mel" class="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            <input type="text" id="new-category-name" placeholder="Ex: Lua de Mel" class="flex-grow block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             <button id="add-category-btn" class="bg-green-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-700 transition-colors"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Adicionar Novo Gasto</h3>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Adicionar Gasto (Rápido)</h3>
                         <div class="space-y-4">
-                            <div><label for="new-item-category" class="block text-sm font-medium text-gray-700">Categoria</label><select id="new-item-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select></div>
-                            <div><label for="new-item-name" class="block text-sm font-medium text-gray-700">Nome do Item</label><input type="text" id="new-item-name" placeholder="Ex: Fotógrafo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
-                            <div><label for="new-item-responsible" class="block text-sm font-medium text-gray-700">Responsável</label><input type="text" id="new-item-responsible" placeholder="Ex: Pedro" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
-                            <div><label for="new-item-date" class="block text-sm font-medium text-gray-700">Data</label><input type="date" id="new-item-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
-                            <div><label for="new-item-value" class="block text-sm font-medium text-gray-700">Valor (R$)</label><input type="number" id="new-item-value" placeholder="1500.00" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <div><label for="new-item-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label><select id="new-item-category" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></select></div>
+                            <div><label for="new-item-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Item</label><input type="text" id="new-item-name" placeholder="Ex: Fotógrafo" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
+                            <div><label for="new-item-value" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor (R$)</label><input type="number" id="new-item-value" placeholder="1500.00" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></div>
                             <button id="add-item-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Adicionar Item</button>
                         </div>
                     </div>
@@ -143,23 +173,23 @@
         // --- DOM ELEMENTS ---
         const appLoader = document.getElementById('app-loader');
         const mainApp = document.getElementById('main-app');
-        const sharedIdDisplay = document.getElementById('shared-id-display');
         const categoriesContainer = document.getElementById('categories-container');
         const categorySelect = document.getElementById('new-item-category');
         const addItemBtn = document.getElementById('add-item-btn');
         const newItemNameInput = document.getElementById('new-item-name');
-        const newItemResponsibleInput = document.getElementById('new-item-responsible');
-        const newItemDateInput = document.getElementById('new-item-date');
         const newItemValueInput = document.getElementById('new-item-value');
         const newCategoryNameInput = document.getElementById('new-category-name');
         const addCategoryBtn = document.getElementById('add-category-btn');
         const chartCanvas = document.getElementById('expense-chart');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let expenseData;
-        const currentWeddingId = 'pemily1601'; // ID is now fixed
+        const currentWeddingId = 'pemily1601';
         let unsubscribe; 
         let expenseChart = null;
 
@@ -238,6 +268,11 @@
         const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
         const renderChart = () => {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+            
+            Chart.defaults.color = textColor;
+
             const ctx = chartCanvas.getContext('2d');
             const labels = Object.keys(expenseData);
             const data = labels.map(categoryName => 
@@ -258,12 +293,19 @@
                         label: 'Gastos por Categoria',
                         data: data,
                         backgroundColor: (context) => backgroundColors[context.dataIndex % backgroundColors.length],
-                        hoverOffset: 4
+                        hoverOffset: 4,
+                        borderColor: isDarkMode ? '#1f2937' : '#fff'
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } }
+                    plugins: { 
+                        legend: { 
+                            position: 'top',
+                            labels: { color: textColor }
+                        }, 
+                        tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } 
+                    }
                 }
             });
         };
@@ -281,34 +323,60 @@
                 categorySelect.appendChild(option);
 
                 const categoryCard = document.createElement('div');
-                categoryCard.className = 'bg-white p-6 rounded-2xl shadow-lg category-card';
+                categoryCard.className = 'bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg category-card';
                 categoryCard.dataset.categoryName = categoryName;
                 
                 let categoryTotal = 0;
+                let categoryPaid = 0;
                 let itemsHtml = '';
 
                 (expenseData[categoryName] || []).forEach((item, index) => {
-                    categoryTotal += item.value || 0;
-                    if(item.completed) paidTotal += item.value || 0;
+                    const itemValue = item.value || 0;
+                    categoryTotal += itemValue;
+                    if(item.completed) {
+                        paidTotal += itemValue;
+                        categoryPaid += itemValue;
+                    }
                     
                     const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem data';
 
                     itemsHtml += `
                         <li class="task-item ${item.completed ? 'completed' : ''}" data-item-id="${categoryName}-${index}">
-                            <div class="view-mode flex items-center justify-between py-2 border-b">
-                                <div class="flex items-center flex-grow"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}>
-                                    <div class="ml-3 flex-grow"><p class="item-name">${item.name}</p><p class="text-sm text-gray-500"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div>
+                            <div class="view-mode flex items-center justify-between py-2 border-b dark:border-gray-700">
+                                <div class="flex items-center flex-grow"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}>
+                                    <div class="ml-3 flex-grow"><p class="item-name text-gray-800 dark:text-gray-200">${item.name}</p><p class="text-sm text-gray-500 dark:text-gray-400"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div>
                                 </div>
-                                <div class="flex items-center flex-shrink-0"><span class="font-semibold mr-4 item-value">${formatCurrency(item.value)}</span><button class="edit-btn text-gray-500 hover:text-blue-700 mr-2"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></div>
+                                <div class="flex items-center flex-shrink-0"><span class="font-semibold mr-4 item-value">${formatCurrency(item.value)}</span><button class="edit-btn text-gray-500 hover:text-blue-700 dark:hover:text-blue-400 mr-2"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-500 hover:text-red-700 dark:hover:text-red-400"><i class="fas fa-trash-alt"></i></button></div>
                             </div>
-                            <div class="edit-mode hidden flex items-center justify-between py-2 border-b">
-                                <div class="flex-grow mr-2 space-y-2"><input type="text" class="edit-input edit-name" value="${item.name}"><input type="text" class="edit-input edit-responsible" value="${item.responsible || ''}" placeholder="Responsável"><input type="date" class="edit-input edit-date" value="${item.date}"><input type="number" step="0.01" class="edit-input edit-value" value="${item.value}"></div>
-                                <button class="save-btn text-green-500 hover:text-green-700"><i class="fas fa-save fa-lg"></i></button>
+                            <div class="edit-mode hidden flex items-center justify-between py-2 border-b dark:border-gray-700">
+                                <div class="flex-grow mr-2 space-y-2"><input type="text" class="edit-input edit-name dark:bg-gray-700 dark:border-gray-600" value="${item.name}"><input type="text" class="edit-input edit-responsible dark:bg-gray-700 dark:border-gray-600" value="${item.responsible || ''}" placeholder="Responsável"><input type="date" class="edit-input edit-date dark:bg-gray-700 dark:border-gray-600" value="${item.date}"><input type="number" step="0.01" class="edit-input edit-value dark:bg-gray-700 dark:border-gray-600" value="${item.value}"></div>
+                                <button class="save-btn text-green-500 hover:text-green-700 dark:hover:text-green-400"><i class="fas fa-save fa-lg"></i></button>
                             </div>
                         </li>`;
                 });
                 grandTotal += categoryTotal;
-                categoryCard.innerHTML = `<h3 class="category-handle text-2xl font-bold text-gray-900 mb-4 flex justify-between items-center"><span>${categoryName}</span><div class="flex items-center"><span class="text-xl text-blue-600 mr-3">${formatCurrency(categoryTotal)}</span><button class="delete-category-btn text-gray-400 hover:text-red-700" data-category-name="${categoryName}"><i class="fas fa-trash-alt"></i></button></div></h3><ul class="space-y-2 item-list">${itemsHtml}</ul>`;
+                itemsHtml += `
+                    <li class="add-item-inline-area mt-2">
+                        <button class="add-item-inline-btn text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fas fa-plus mr-2"></i> Adicionar um item
+                        </button>
+                    </li>
+                `;
+                
+                const categoryPending = categoryTotal - categoryPaid;
+
+                categoryCard.innerHTML = `<h3 class="category-handle text-2xl font-bold text-gray-900 dark:text-white mb-4 flex justify-between items-center">
+                                            <span class="category-title-text">${categoryName}</span>
+                                            <div class="flex items-center">
+                                                <span class="text-xl text-blue-600 dark:text-blue-400 mr-3">${formatCurrency(categoryTotal)}</span>
+                                                <button class="delete-category-btn text-gray-400 hover:text-red-700 dark:hover:text-red-400" data-category-name="${categoryName}"><i class="fas fa-trash-alt"></i></button>
+                                            </div>
+                                          </h3>
+                                          <ul class="space-y-2 item-list">${itemsHtml}</ul>
+                                          <div class="text-sm mt-3 pt-3 border-t dark:border-gray-700 flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>Pago: <strong class="text-green-600 dark:text-green-400">${formatCurrency(categoryPaid)}</strong></span>
+                                            <span>Pendente: <strong class="text-red-600 dark:text-red-400">${formatCurrency(categoryPending)}</strong></span>
+                                          </div>`;
                 categoriesContainer.appendChild(categoryCard);
             }
             document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
@@ -323,6 +391,8 @@
             new Sortable(categoriesContainer, {
                 animation: 150,
                 handle: '.category-handle',
+                delay: 4000,
+                delayOnTouchOnly: true,
                 onEnd: (evt) => {
                     const newOrder = Array.from(categoriesContainer.children).map(card => card.dataset.categoryName);
                     const reorderedData = {};
@@ -338,6 +408,8 @@
                 new Sortable(list, {
                     group: 'shared',
                     animation: 150,
+                    delay: 4000,
+                    delayOnTouchOnly: true,
                     onEnd: (evt) => {
                         const fromCategory = evt.from.closest('.category-card').dataset.categoryName;
                         const toCategory = evt.to.closest('.category-card').dataset.categoryName;
@@ -375,9 +447,63 @@
             });
         };
 
+        categoriesContainer.addEventListener('dblclick', (e) => {
+            if (e.target.classList.contains('category-title-text')) {
+                const titleSpan = e.target;
+                const categoryCard = titleSpan.closest('.category-card');
+                const oldCategoryName = categoryCard.dataset.categoryName;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = oldCategoryName;
+                input.className = 'edit-input text-2xl font-bold dark:bg-gray-700 dark:border-gray-600';
+
+                titleSpan.style.display = 'none';
+                titleSpan.parentElement.prepend(input);
+                input.focus();
+                input.select();
+
+                const saveTitle = () => {
+                    const newCategoryName = input.value.trim();
+                    if (newCategoryName && newCategoryName !== oldCategoryName) {
+                        if (expenseData.hasOwnProperty(newCategoryName)) {
+                            alert('Essa categoria já existe.');
+                            titleSpan.style.display = '';
+                            input.remove();
+                            return;
+                        }
+                        
+                        const newExpenseData = {};
+                        Object.keys(expenseData).forEach(key => {
+                            if (key === oldCategoryName) {
+                                newExpenseData[newCategoryName] = expenseData[oldCategoryName];
+                            } else {
+                                newExpenseData[key] = expenseData[key];
+                            }
+                        });
+                        expenseData = newExpenseData;
+                        saveData();
+                    } else {
+                        titleSpan.style.display = '';
+                        input.remove();
+                    }
+                };
+
+                input.addEventListener('blur', saveTitle);
+                input.addEventListener('keydown', (evt) => {
+                    if (evt.key === 'Enter') input.blur();
+                    else if (evt.key === 'Escape') {
+                        titleSpan.style.display = '';
+                        input.remove();
+                    }
+                });
+            }
+        });
+
         categoriesContainer.addEventListener('click', (e) => {
             const taskItem = e.target.closest('.task-item');
             const categoryBtn = e.target.closest('.delete-category-btn');
+            const addItemBtnInline = e.target.closest('.add-item-inline-btn');
 
             if (taskItem) {
                 const [category, itemIndex] = taskItem.dataset.itemId.split('-');
@@ -406,6 +532,20 @@
                     delete expenseData[categoryNameToDelete];
                     saveData();
                 }
+            } else if (addItemBtnInline) {
+                const card = addItemBtnInline.closest('.category-card');
+                const categoryName = card.dataset.categoryName;
+                
+                expenseData[categoryName].push({ name: "Novo Item", value: 0, date: "", responsible: "", completed: false });
+                saveData().then(() => {
+                    const items = card.querySelectorAll('.task-item');
+                    const newItem = items[items.length - 1];
+                    if (newItem) {
+                        newItem.querySelector('.edit-btn').click();
+                        newItem.querySelector('.edit-name').focus();
+                        newItem.querySelector('.edit-name').select();
+                    }
+                });
             }
         });
 
@@ -425,25 +565,45 @@
         addItemBtn.addEventListener('click', () => {
             const category = categorySelect.value;
             const name = newItemNameInput.value.trim();
-            const responsible = newItemResponsibleInput.value.trim();
-            const date = newItemDateInput.value;
             const value = parseFloat(newItemValueInput.value);
 
             if (name && !isNaN(value) && category) {
                 if (!expenseData[category]) expenseData[category] = [];
-                expenseData[category].push({ name, value, date, responsible, completed: false });
+                expenseData[category].push({ name, value, date: "", responsible: "", completed: false });
                 newItemNameInput.value = '';
-                newItemResponsibleInput.value = '';
                 newItemValueInput.value = '';
-                newItemDateInput.value = '';
                 saveData();
             } else {
-                alert('Por favor, preencha todos os campos corretamente.');
+                alert('Por favor, preencha o nome, valor e categoria.');
             }
         });
 
+        // --- THEME TOGGLE ---
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                darkIcon.classList.add('hidden');
+                lightIcon.classList.remove('hidden');
+            }
+            if (expenseData) {
+                renderChart();
+            }
+        };
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const newTheme = isDark ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
         // --- INITIALIZATION ---
-        // Automatically start the app with the fixed ID
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(savedTheme);
         startApp(currentWeddingId);
 
     </script>
