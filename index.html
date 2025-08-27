@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controlo de Gastos - Casamento</title>
+    <title>Controle de Gastos - Casamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -37,7 +37,7 @@
             width: 100%;
         }
         #app-loader {
-            display: flex; /* Shown by default now */
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
@@ -63,7 +63,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Styles for drag and drop */
         .category-card.sortable-ghost, .task-item.sortable-ghost {
             opacity: 0.4;
             background: #dbeafe;
@@ -110,18 +109,10 @@
             
             <div class="flex justify-center mb-8">
                 <div class="inline-flex rounded-md shadow-sm" role="group">
-                    <button type="button" id="view-kanban-btn" class="view-btn active py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-l-lg border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
-                        <i class="fas fa-th-large mr-2"></i>Quadros
-                    </button>
-                    <button type="button" id="view-list-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
-                       <i class="fas fa-list-ul mr-2"></i>Lista
-                    </button>
-                    <button type="button" id="view-calendar-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
-                       <i class="fas fa-calendar-alt mr-2"></i>Calendário
-                    </button>
-                    <button type="button" id="view-dashboard-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-r-md border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
-                       <i class="fas fa-chart-pie mr-2"></i>Dashboard
-                    </button>
+                    <button type="button" id="view-kanban-btn" class="view-btn active py-2 px-4 text-sm font-medium"><i class="fas fa-th-large mr-2"></i>Quadros</button>
+                    <button type="button" id="view-list-btn" class="view-btn py-2 px-4 text-sm font-medium"><i class="fas fa-list-ul mr-2"></i>Lista</button>
+                    <button type="button" id="view-calendar-btn" class="view-btn py-2 px-4 text-sm font-medium"><i class="fas fa-calendar-alt mr-2"></i>Calendário</button>
+                    <button type="button" id="view-dashboard-btn" class="view-btn py-2 px-4 text-sm font-medium"><i class="fas fa-chart-pie mr-2"></i>Dashboard</button>
                 </div>
             </div>
 
@@ -149,14 +140,8 @@
                 </aside>
             </main>
             
-            <main id="list-view" class="hidden space-y-8">
-                <!-- List view content will be generated here -->
-            </main>
-
-            <main id="calendar-view" class="hidden bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                <!-- Calendar view content will be generated here -->
-            </main>
-            
+            <main id="list-view" class="hidden space-y-8"></main>
+            <main id="calendar-view" class="hidden bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg"></main>
             <main id="dashboard-view" class="hidden grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Distribuição por Categoria</h3>
@@ -211,23 +196,41 @@
         const db = getFirestore(app);
 
         let appData = {};
-        const currentWeddingId = 'pemily1601';
+        const currentPlanId = 'pemily1601';
         let unsubscribe; 
         let categoryChart = null;
         let responsibleChart = null;
         let currentView = 'kanban';
         let calendarDate = new Date();
 
-        const emptyData = {
+        const defaultData = {
             title: "Planeamento de Gastos do Casamento",
-            categoryOrder: [],
-            expenses: {}
+            categoryOrder: [
+                "PGTO SÍTIO EM 22/08/2025",
+                "Serviços Restantes SÍTIO (Setembro)",
+                "Em Haver (Out/Nov/Dez)",
+                "Fornecedores Pendentes",
+                "Ainda para Setembro - Cartão de crédito Pedro",
+                "Ainda para Outubro - Cartão de Crédito - Camily",
+                "Para Novembro",
+                "Ainda para Dezembro"
+            ],
+            expenses: {
+                "PGTO SÍTIO EM 22/08/2025": [ { "name": "DJ/Som e iluminação", "value": 1800.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" }, { "name": "Pista de dança", "value": 1200.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" }, { "name": "Bar de drinks", "value": 1400.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" }, { "name": "Casa da noiva", "value": 500.00, "completed": true, "date": "2025-08-22", "responsible": "N/A" } ],
+                "Serviços Restantes SÍTIO (Setembro)": [ { "name": "Limpeza", "value": 300.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" }, { "name": "Apoio", "value": 250.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" }, { "name": "Portaria", "value": 250.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" }, { "name": "Garçons", "value": 880.00, "completed": false, "date": "2025-09-30", "responsible": "Ambos" } ],
+                "Em Haver (Out/Nov/Dez)": [ { "name": "Bebida", "value": 1512.00, "completed": false, "date": "2025-10-31", "responsible": "N/A" }, { "name": "Gastronomia", "value": 7120.00, "completed": false, "date": "2025-11-30", "responsible": "N/A" }, { "name": "Decoração", "value": 9000.00, "completed": false, "date": "2025-12-31", "responsible": "N/A" } ],
+                "Fornecedores Pendentes": [ { "name": "Músicos", "value": 1500.00, "completed": false, "date": "", "responsible": "N/A" }, { "name": "Chopp 50L", "value": 700.00, "completed": false, "date": "", "responsible": "N/A" }, { "name": "Dia da Noiva", "value": 700.00, "completed": false, "date": "", "responsible": "Camily" }, { "name": "Cabelo (Dia da Noiva)", "value": 280.00, "completed": false, "date": "", "responsible": "Camily" }, { "name": "Telão Pré-wedding?", "value": 0, "completed": false, "date": "", "responsible": "N/A" }, { "name": "Polaroid", "value": 0, "completed": false, "date": "", "responsible": "N/A" }, { "name": "Arco?", "value": 0, "completed": false, "date": "", "responsible": "N/A" }, { "name": "Vestido noiva", "value": 0, "completed": false, "date": "", "responsible": "Camily" }, { "name": "Sapato noiva", "value": 0, "completed": false, "date": "", "responsible": "Camily" } ],
+                "Ainda para Setembro - Cartão de crédito Pedro": [ { "name": "40 Envelopes para os convites", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }, { "name": "40 lacres para convites", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }, { "name": "Mil pétalas", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }, { "name": "Porta Alianças", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }, { "name": "Saquinho/lenços lágrimas de alegria", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" }, { "name": "Acessórios Polícia Guilherme", "value": 0, "completed": false, "date": "2025-09-30", "responsible": "Pedro" } ],
+                "Ainda para Outubro - Cartão de Crédito - Camily": [ { "name": "Roupa do Max", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" }, { "name": "Coleira preta Max", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" }, { "name": "Caixa com cadeado - gravata", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" }, { "name": "Roupão das madrinhas", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" }, { "name": "Roupão das mães", "value": 0, "completed": false, "date": "2025-10-31", "responsible": "Camily" } ],
+                "Para Novembro": [ { "name": "Quadro receptivo entrada Shoppe", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" }, { "name": "Lembrancinhas - Velas Shoppe", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" }, { "name": "Bem casados", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" }, { "name": "Doces tradicionais", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "N/A" }, { "name": "Bolo - Tortas Doquinha - Mãe Beta", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Mãe Beta" }, { "name": "Topo do bolo noivinhos e max - Suelen", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Suelen" }, { "name": "Doces finos - Mãe Cristina", "value": 0, "completed": false, "date": "2025-11-30", "responsible": "Mãe Cristina" } ],
+                "Ainda para Dezembro": [ { "name": "Impressão centro de mesas", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" }, { "name": "Impressão adesivos chaves da caixa", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" }, { "name": "Impressão lágrimas de alegria", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" }, { "name": "QR CODE pix gravata", "value": 0, "completed": false, "date": "2025-12-31", "responsible": "N/A" } ]
+            }
         };
 
         const saveData = async (dataToSave) => {
-            if (!currentWeddingId) return;
+            if (!currentPlanId) return;
             try {
-                const docRef = doc(db, "weddings", currentWeddingId);
+                const docRef = doc(db, "plans", currentPlanId);
                 await setDoc(docRef, dataToSave);
             } catch (error) {
                 console.error("Error saving data: ", error);
@@ -240,6 +243,7 @@
         const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
         const renderCharts = () => {
+             if (!appData.expenses) return;
             renderCategoryChart();
             renderResponsibleChart();
         };
@@ -250,7 +254,7 @@
             Chart.defaults.color = textColor;
             const ctx = chartCanvasCategory.getContext('2d');
             const labels = appData.categoryOrder || Object.keys(appData.expenses);
-            const data = labels.map(categoryName => (appData.expenses[categoryName] || []).reduce((sum, item) => sum + (item.value || 0), 0));
+            const data = labels.map(categoryName => (appData.expenses[categoryName] || []).reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0));
             const backgroundColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#FBBF24', '#22C55E', '#38BDF8', '#FB923C'];
             if (categoryChart) categoryChart.destroy();
             categoryChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ label: 'Gastos por Categoria', data, backgroundColor: (c) => backgroundColors[c.dataIndex % backgroundColors.length], hoverOffset: 4, borderColor: isDarkMode ? '#1f2937' : '#fff' }] }, options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: textColor } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } } } });
@@ -269,7 +273,7 @@
                 if (!responsibleData[responsible]) {
                     responsibleData[responsible] = 0;
                 }
-                responsibleData[responsible] += item.value || 0;
+                responsibleData[responsible] += parseFloat(item.value) || 0;
             });
 
             const labels = Object.keys(responsibleData);
@@ -314,11 +318,11 @@
                 let itemsHtml = '';
 
                 (appData.expenses[categoryName] || []).forEach((item, index) => {
-                    const itemValue = item.value || 0;
+                    const itemValue = parseFloat(item.value) || 0;
                     categoryTotal += itemValue;
                     if(item.completed) { paidTotal += itemValue; categoryPaid += itemValue; }
                     const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem data';
-                    itemsHtml += `<li class="task-item ${item.completed ? 'completed' : ''}" data-item-id="${categoryName}-${index}"><div class="view-mode flex items-center justify-between py-2 border-b dark:border-gray-700"><div class="flex items-center flex-grow"><i class="fas fa-grip-vertical handle item-handle text-gray-400 dark:text-gray-500 mr-3"></i><input type="checkbox" class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}><div class="ml-3 flex-grow"><p class="item-name text-gray-800 dark:text-gray-200">${item.name}</p><p class="text-sm text-gray-500 dark:text-gray-400"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div></div><div class="flex items-center flex-shrink-0"><span class="font-semibold mr-4 item-value">${formatCurrency(item.value)}</span><button class="edit-btn text-gray-500 hover:text-blue-700 dark:hover:text-blue-400 mr-2"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-500 hover:text-red-700 dark:hover:text-red-400"><i class="fas fa-trash-alt"></i></button></div></div><div class="edit-mode hidden flex items-center justify-between py-2 border-b dark:border-gray-700"><div class="flex-grow mr-2 space-y-2"><input type="text" class="edit-input edit-name dark:bg-gray-700 dark:border-gray-600" value="${item.name}"><input type="text" class="edit-input edit-responsible dark:bg-gray-700 dark:border-gray-600" value="${item.responsible || ''}" placeholder="Responsável"><input type="date" class="edit-input edit-date dark:bg-gray-700 dark:border-gray-600" value="${item.date}"><input type="number" step="0.01" class="edit-input edit-value dark:bg-gray-700 dark:border-gray-600" value="${item.value}"></div><button class="save-btn text-green-500 hover:text-green-700 dark:hover:text-green-400"><i class="fas fa-save fa-lg"></i></button></div></li>`;
+                    itemsHtml += `<li class="task-item ${item.completed ? 'completed' : ''}" data-category="${categoryName}" data-index="${index}"><div class="view-mode flex items-center justify-between py-2 border-b dark:border-gray-700"><div class="flex items-center flex-grow"><i class="fas fa-grip-vertical handle item-handle text-gray-400 dark:text-gray-500 mr-3"></i><input type="checkbox" class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer item-checkbox" ${item.completed ? 'checked' : ''}><div class="ml-3 flex-grow"><p class="item-name text-gray-800 dark:text-gray-200">${item.name}</p><p class="text-sm text-gray-500 dark:text-gray-400"><span class="item-date">${formattedDate}</span> <span class="font-semibold item-responsible">(${item.responsible || 'N/A'})</span></p></div></div><div class="flex items-center flex-shrink-0"><span class="font-semibold mr-4 item-value">${formatCurrency(item.value)}</span><button class="edit-btn text-gray-500 hover:text-blue-700 dark:hover:text-blue-400 mr-2"><i class="fas fa-pencil-alt"></i></button><button class="delete-btn text-gray-500 hover:text-red-700 dark:hover:text-red-400"><i class="fas fa-trash-alt"></i></button></div></div><div class="edit-mode hidden flex items-center justify-between py-2 border-b dark:border-gray-700"><div class="flex-grow mr-2 space-y-2"><input type="text" class="edit-input edit-name dark:bg-gray-700 dark:border-gray-600" value="${item.name}"><input type="text" class="edit-input edit-responsible dark:bg-gray-700 dark:border-gray-600" value="${item.responsible || ''}" placeholder="Responsável"><input type="date" class="edit-input edit-date dark:bg-gray-700 dark:border-gray-600" value="${item.date}"><input type="number" step="0.01" class="edit-input edit-value dark:bg-gray-700 dark:border-gray-600" value="${item.value}"></div><div class="flex items-center gap-2"><button class="save-btn text-green-500 hover:text-green-700 dark:hover:text-green-400"><i class="fas fa-save fa-lg"></i></button><button class="cancel-btn text-red-500 hover:text-red-700 dark:hover:text-red-400"><i class="fas fa-times fa-lg"></i></button></div></div></li>`;
                 });
                 grandTotal += categoryTotal;
                 itemsHtml += `<li class="add-item-inline-area mt-2"><button class="add-item-inline-btn text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><i class="fas fa-plus mr-2"></i> Adicionar um item</button></li>`;
@@ -339,7 +343,7 @@
                 categoryCard.className = 'bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg';
                 let itemsHtml = (appData.expenses[categoryName] || []).map((item, index) => {
                     const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem data';
-                    return `<li class="task-item flex justify-between items-center py-2 border-b dark:border-gray-700 ${item.completed ? 'completed' : ''}" data-item-id="${categoryName}-${index}"><div class="flex items-center"><input type="checkbox" class="item-checkbox h-4 w-4" ${item.completed ? 'checked' : ''}><div class="ml-3"><p class="item-name">${item.name}</p><p class="text-sm text-gray-500 dark:text-gray-400">${formattedDate} (${item.responsible || 'N/A'})</p></div></div><span class="font-semibold">${formatCurrency(item.value)}</span></li>`;
+                    return `<li class="task-item flex justify-between items-center py-2 border-b dark:border-gray-700 ${item.completed ? 'completed' : ''}" data-category="${categoryName}" data-index="${index}"><div class="flex items-center"><input type="checkbox" class="item-checkbox h-4 w-4" ${item.completed ? 'checked' : ''}><div class="ml-3"><p class="item-name">${item.name}</p><p class="text-sm text-gray-500 dark:text-gray-400">${formattedDate} (${item.responsible || 'N/A'})</p></div></div><span class="font-semibold">${formatCurrency(item.value)}</span></li>`;
                 }).join('');
                 categoryCard.innerHTML = `<h3 class="text-xl font-bold mb-4">${categoryName}</h3><ul>${itemsHtml}</ul>`;
                 listView.appendChild(categoryCard);
@@ -408,10 +412,10 @@
             document.querySelectorAll('.item-list').forEach(list => { new Sortable(list, { group: 'shared', animation: 150, handle: '.item-handle', onEnd: (evt) => { const fromCat = evt.from.closest('.category-card').dataset.categoryName; const toCat = evt.to.closest('.category-card').dataset.categoryName; const [movedItem] = appData.expenses[fromCat].splice(evt.oldIndex, 1); if (!appData.expenses[toCat]) appData.expenses[toCat] = []; appData.expenses[toCat].splice(evt.newIndex, 0, movedItem); saveAppData(); } }); });
         };
 
-        const startApp = (weddingId) => {
+        const startApp = (planId) => {
             mainApp.classList.remove('hidden');
             appLoader.style.display = 'flex';
-            const docRef = doc(db, "weddings", weddingId);
+            const docRef = doc(db, "plans", planId);
             unsubscribe = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     appData = docSnap.data();
@@ -419,7 +423,7 @@
                         appData.categoryOrder = Object.keys(appData.expenses);
                     }
                 } else {
-                    appData = JSON.parse(JSON.stringify(emptyData));
+                    appData = JSON.parse(JSON.stringify(defaultData));
                     saveData(appData); 
                 }
                 render();
@@ -483,8 +487,8 @@
                 input.addEventListener('blur', saveTitle);
                 input.addEventListener('keydown', (evt) => { if (evt.key === 'Enter') input.blur(); else if (evt.key === 'Escape') { titleSpan.style.display = ''; h3.querySelector('.handle').style.display = ''; input.remove(); } });
             } else if (taskItem) {
-                const [category, itemIndex] = taskItem.dataset.itemId.split('-');
-                const index = parseInt(itemIndex);
+                const category = taskItem.dataset.category;
+                const index = parseInt(taskItem.dataset.index);
                 if (e.target.closest('.edit-btn')) {
                     taskItem.querySelector('.view-mode').classList.add('hidden');
                     taskItem.querySelector('.edit-mode').classList.remove('hidden');
@@ -495,6 +499,9 @@
                     appData.expenses[category][index].date = editMode.querySelector('.edit-date').value;
                     appData.expenses[category][index].value = parseFloat(editMode.querySelector('.edit-value').value) || 0;
                     saveAppData();
+                } else if (e.target.closest('.cancel-btn')) {
+                    taskItem.querySelector('.view-mode').classList.remove('hidden');
+                    taskItem.querySelector('.edit-mode').classList.add('hidden');
                 } else if (e.target.closest('.delete-btn')) {
                     appData.expenses[category].splice(index, 1);
                     saveAppData();
@@ -584,7 +591,7 @@
 
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(savedTheme);
-        startApp(currentWeddingId);
+        startApp(currentPlanId);
 
     </script>
 </body>
