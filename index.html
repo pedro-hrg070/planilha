@@ -81,6 +81,9 @@
         .dark .view-btn.active {
             background-color: #2563EB;
         }
+        .calendar-day {
+            min-height: 120px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
@@ -110,8 +113,14 @@
                     <button type="button" id="view-kanban-btn" class="view-btn active py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-l-lg border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
                         <i class="fas fa-th-large mr-2"></i>Quadros
                     </button>
-                    <button type="button" id="view-list-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-r-md border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
+                    <button type="button" id="view-list-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
                        <i class="fas fa-list-ul mr-2"></i>Lista
+                    </button>
+                    <button type="button" id="view-calendar-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
+                       <i class="fas fa-calendar-alt mr-2"></i>Calendário
+                    </button>
+                    <button type="button" id="view-dashboard-btn" class="view-btn py-2 px-4 text-sm font-medium text-gray-900 bg-white rounded-r-md border border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600">
+                       <i class="fas fa-chart-pie mr-2"></i>Dashboard
                     </button>
                 </div>
             </div>
@@ -130,12 +139,6 @@
                             <div class="flex justify-between items-center text-lg"><span class="font-medium text-gray-700 dark:text-gray-300">Total Pendente:</span><span id="pending-total" class="font-bold text-red-600 dark:text-red-400">R$ 0,00</span></div>
                         </div>
                     </div>
-
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Distribuição de Gastos</h3>
-                        <canvas id="expense-chart"></canvas>
-                    </div>
-
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Adicionar Nova Categoria</h3>
                         <div class="flex space-x-2">
@@ -148,6 +151,21 @@
             
             <main id="list-view" class="hidden space-y-8">
                 <!-- List view content will be generated here -->
+            </main>
+
+            <main id="calendar-view" class="hidden bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                <!-- Calendar view content will be generated here -->
+            </main>
+            
+            <main id="dashboard-view" class="hidden grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Distribuição por Categoria</h3>
+                    <canvas id="expense-chart-category"></canvas>
+                </div>
+                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Gastos por Responsável</h3>
+                    <canvas id="expense-chart-responsible"></canvas>
+                </div>
             </main>
         </div>
     </div>
@@ -175,14 +193,19 @@
         const categoriesContainer = document.getElementById('categories-container');
         const newCategoryNameInput = document.getElementById('new-category-name');
         const addCategoryBtn = document.getElementById('add-category-btn');
-        const chartCanvas = document.getElementById('expense-chart');
+        const chartCanvasCategory = document.getElementById('expense-chart-category');
+        const chartCanvasResponsible = document.getElementById('expense-chart-responsible');
         const themeToggleBtn = document.getElementById('theme-toggle');
         const darkIcon = document.getElementById('theme-toggle-dark-icon');
         const lightIcon = document.getElementById('theme-toggle-light-icon');
         const kanbanView = document.getElementById('kanban-view');
         const listView = document.getElementById('list-view');
+        const calendarView = document.getElementById('calendar-view');
+        const dashboardView = document.getElementById('dashboard-view');
         const viewKanbanBtn = document.getElementById('view-kanban-btn');
         const viewListBtn = document.getElementById('view-list-btn');
+        const viewCalendarBtn = document.getElementById('view-calendar-btn');
+        const viewDashboardBtn = document.getElementById('view-dashboard-btn');
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -190,10 +213,11 @@
         let appData = {};
         const currentWeddingId = 'pemily1601';
         let unsubscribe; 
-        let expenseChart = null;
+        let categoryChart = null;
+        let responsibleChart = null;
         let currentView = 'kanban';
+        let calendarDate = new Date();
 
-        // Estrutura de dados vazia para um novo planeamento
         const emptyData = {
             title: "Planeamento de Gastos do Casamento",
             categoryOrder: [],
@@ -215,16 +239,64 @@
 
         const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
-        const renderChart = () => {
+        const renderCharts = () => {
+            renderCategoryChart();
+            renderResponsibleChart();
+        };
+
+        const renderCategoryChart = () => {
             const isDarkMode = document.documentElement.classList.contains('dark');
             const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
             Chart.defaults.color = textColor;
-            const ctx = chartCanvas.getContext('2d');
+            const ctx = chartCanvasCategory.getContext('2d');
             const labels = appData.categoryOrder || Object.keys(appData.expenses);
             const data = labels.map(categoryName => (appData.expenses[categoryName] || []).reduce((sum, item) => sum + (item.value || 0), 0));
             const backgroundColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#FBBF24', '#22C55E', '#38BDF8', '#FB923C'];
-            if (expenseChart) expenseChart.destroy();
-            expenseChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ label: 'Gastos por Categoria', data, backgroundColor: (c) => backgroundColors[c.dataIndex % backgroundColors.length], hoverOffset: 4, borderColor: isDarkMode ? '#1f2937' : '#fff' }] }, options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: textColor } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } } } });
+            if (categoryChart) categoryChart.destroy();
+            categoryChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ label: 'Gastos por Categoria', data, backgroundColor: (c) => backgroundColors[c.dataIndex % backgroundColors.length], hoverOffset: 4, borderColor: isDarkMode ? '#1f2937' : '#fff' }] }, options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: textColor } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } } } });
+        };
+
+        const renderResponsibleChart = () => {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            Chart.defaults.color = textColor;
+            const ctx = chartCanvasResponsible.getContext('2d');
+
+            const responsibleData = {};
+            Object.values(appData.expenses || {}).flat().forEach(item => {
+                const responsible = item.responsible || 'N/A';
+                if (!responsibleData[responsible]) {
+                    responsibleData[responsible] = 0;
+                }
+                responsibleData[responsible] += item.value || 0;
+            });
+
+            const labels = Object.keys(responsibleData);
+            const data = Object.values(responsibleData);
+            const backgroundColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+            if (responsibleChart) responsibleChart.destroy();
+            responsibleChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Gastos por Responsável',
+                        data,
+                        backgroundColor: (c) => backgroundColors[c.dataIndex % backgroundColors.length],
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { callback: (value) => formatCurrency(value) }, grid: { color: gridColor } },
+                        y: { grid: { color: gridColor } }
+                    },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed.x)}` } } }
+                }
+            });
         };
         
         const renderKanbanView = () => {
@@ -261,7 +333,7 @@
 
         const renderListView = () => {
             listView.innerHTML = '';
-            appData.categoryOrder.forEach(categoryName => {
+            (appData.categoryOrder || []).forEach(categoryName => {
                 if (!appData.expenses[categoryName]) return;
                 const categoryCard = document.createElement('div');
                 categoryCard.className = 'bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg';
@@ -274,16 +346,61 @@
             });
         };
 
+        const renderCalendarView = () => {
+            const month = calendarDate.getMonth();
+            const year = calendarDate.getFullYear();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+            let calendarHtml = `<div class="flex justify-between items-center mb-4"><button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i class="fas fa-chevron-left"></i></button><h2 class="text-2xl font-bold">${monthNames[month]} ${year}</h2><button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i class="fas fa-chevron-right"></i></button></div><div class="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600 dark:text-gray-400">${dayNames.map(day => `<div>${day}</div>`).join('')}</div><div class="grid grid-cols-7 gap-1 mt-2">`;
+            const eventsByDate = {};
+            if (appData.expenses) {
+                for (const category in appData.expenses) {
+                    appData.expenses[category].forEach(item => {
+                        if (item.date) {
+                            if (!eventsByDate[item.date]) eventsByDate[item.date] = [];
+                            eventsByDate[item.date].push(item);
+                        }
+                    });
+                }
+            }
+            for (let i = 0; i < firstDay; i++) calendarHtml += `<div></div>`;
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateString === todayString;
+                let eventsHtml = '';
+                if (eventsByDate[dateString]) {
+                    eventsHtml = eventsByDate[dateString].map(item => {
+                        let colorClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+                        if (item.completed) colorClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+                        else if ((item.value || 0) === 0) colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+                        return `<div class="p-1 rounded-md text-xs truncate ${colorClass}" title="${item.name}">${item.name}</div>`;
+                    }).join('');
+                }
+                calendarHtml += `<div class="calendar-day border dark:border-gray-700 p-2 ${isToday ? 'bg-blue-50 dark:bg-blue-900/50' : ''}"><div class="font-bold text-right">${day}</div><div class="space-y-1 mt-1">${eventsHtml}</div></div>`;
+            }
+            calendarHtml += `</div>`;
+            calendarView.innerHTML = calendarHtml;
+            document.getElementById('prev-month-btn').addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendarView(); });
+            document.getElementById('next-month-btn').addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendarView(); });
+        };
+
         const render = () => {
             if (!appData.expenses) return;
             mainTitleText.textContent = appData.title || emptyData.title;
             if (currentView === 'kanban') {
                 renderKanbanView();
                 initSortable();
-            } else {
+            } else if (currentView === 'list') {
                 renderListView();
+            } else if (currentView === 'calendar') {
+                renderCalendarView();
+            } else {
+                renderCharts();
             }
-            renderChart();
         };
 
         const initSortable = () => {
@@ -429,7 +546,7 @@
                 darkIcon.classList.add('hidden');
                 lightIcon.classList.remove('hidden');
             }
-            if (appData.expenses) renderChart();
+            if (appData.expenses) render();
         };
 
         themeToggleBtn.addEventListener('click', () => {
@@ -439,23 +556,31 @@
             applyTheme(newTheme);
         });
 
-        viewKanbanBtn.addEventListener('click', () => {
-            currentView = 'kanban';
-            kanbanView.classList.remove('hidden');
-            listView.classList.add('hidden');
-            viewKanbanBtn.classList.add('active');
-            viewListBtn.classList.remove('active');
-            render();
-        });
+        const switchView = (view) => {
+            currentView = view;
+            [kanbanView, listView, calendarView, dashboardView].forEach(v => v.classList.add('hidden'));
+            [viewKanbanBtn, viewListBtn, viewCalendarBtn, viewDashboardBtn].forEach(b => b.classList.remove('active'));
 
-        viewListBtn.addEventListener('click', () => {
-            currentView = 'list';
-            kanbanView.classList.add('hidden');
-            listView.classList.remove('hidden');
-            viewListBtn.classList.add('active');
-            viewKanbanBtn.classList.remove('active');
+            if (view === 'kanban') {
+                kanbanView.classList.remove('hidden');
+                viewKanbanBtn.classList.add('active');
+            } else if (view === 'list') {
+                listView.classList.remove('hidden');
+                viewListBtn.classList.add('active');
+            } else if (view === 'calendar') {
+                calendarView.classList.remove('hidden');
+                viewCalendarBtn.classList.add('active');
+            } else if (view === 'dashboard') {
+                dashboardView.classList.remove('hidden');
+                viewDashboardBtn.classList.add('active');
+            }
             render();
-        });
+        };
+
+        viewKanbanBtn.addEventListener('click', () => switchView('kanban'));
+        viewListBtn.addEventListener('click', () => switchView('list'));
+        viewCalendarBtn.addEventListener('click', () => switchView('calendar'));
+        viewDashboardBtn.addEventListener('click', () => switchView('dashboard'));
 
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(savedTheme);
