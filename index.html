@@ -480,14 +480,14 @@
             boardSelectionScreen.classList.remove('hidden');
             mainApp.classList.add('hidden');
             appLoader.style.display = 'flex';
-
+            
             // MIGRATION LOGIC FOR OLD 'pemily1601' board
-            const migrationKey = `migration_pemily1601_claimed_by_${currentUser.uid}`;
+            const migrationKey = `migration_v2_claimed_by_${currentUser.uid}`;
             if (!localStorage.getItem(migrationKey)) {
                 const oldPlanRef = doc(db, "plans", "pemily1601");
                 const oldPlanSnap = await getDoc(oldPlanRef);
                 if (oldPlanSnap.exists() && !oldPlanSnap.data().owner) {
-                    await updateDoc(oldPlanRef, {
+                     await updateDoc(oldPlanRef, {
                         owner: currentUser.uid,
                         members: { [currentUser.uid]: 'owner' },
                         memberIds: [currentUser.uid]
@@ -496,6 +496,7 @@
                 }
                 localStorage.setItem(migrationKey, 'true');
             }
+
 
             const q = query(collection(db, "plans"), where("memberIds", "array-contains", currentUser.uid));
             const querySnapshot = await getDocs(q);
