@@ -7,11 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SortableJS Library for Drag and Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- SheetJS (xlsx) Library for Spreadsheet Parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -43,21 +40,48 @@
 
     <div id="app-loader"><div class="loader"></div></div>
 
-    <!-- Key Access Screen Removed -->
-
-    <!-- Main App Screen (Single Board View) -->
-    <div id="main-app" class="hidden"> <!-- Initially hidden until data loads -->
-        <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+    <div id="board-selection-screen" class="hidden">
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-3xl">
             <header class="text-center mb-6 relative">
-                 <!-- Change Key Button Removed -->
+                <h1 class="text-3xl md:text-4xl font-bold">Meus Planejamentos</h1>
+                <button id="theme-toggle-select" class="absolute top-0 right-0 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i id="theme-toggle-dark-icon-select" class="fas fa-moon text-xl hidden"></i>
+                    <i id="theme-toggle-light-icon-select" class="fas fa-sun text-xl hidden"></i>
+                </button>
+            </header>
+            
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
+                <h3 class="text-xl font-bold mb-4">Criar Novo Quadro</h3>
+                <div class="flex space-x-2">
+                    <input type="text" id="new-board-name" placeholder="Ex: Casamento, Reforma da Casa" class="flex-grow w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
+                    <button id="create-board-btn" class="bg-green-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-700"><i class="fas fa-plus"></i> Criar</button>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-4">Quadros Existentes</h3>
+                <ul id="board-list" class="space-y-3">
+                    </ul>
+                <p id="no-boards-msg" class="text-gray-500 dark:text-gray-400 hidden">Nenhum quadro encontrado. Crie um novo acima!</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="main-app" class="hidden"> <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+            <header class="text-center mb-6 relative">
+                
+                <button id="back-to-boards-btn" class="absolute top-0 left-0 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+
                 <div class="flex justify-center items-center gap-2">
                     <h1 id="main-title-text" class="text-3xl md:text-4xl font-bold"></h1>
                     <button id="edit-main-title-btn" class="text-gray-500 hover:text-blue-600"><i class="fas fa-pencil-alt"></i></button>
-                    <!-- Share button removed -->
                 </div>
-                <button id="theme-toggle" class="absolute top-0 right-0 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
-                    <i id="theme-toggle-dark-icon" class="fas fa-moon text-xl hidden"></i>
-                    <i id="theme-toggle-light-icon" class="fas fa-sun text-xl hidden"></i>
+                <button id="theme-toggle-main" class="absolute top-0 right-0 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i id="theme-toggle-dark-icon-main" class="fas fa-moon text-xl hidden"></i>
+                    <i id="theme-toggle-light-icon-main" class="fas fa-sun text-xl hidden"></i>
                 </button>
             </header>
             
@@ -108,11 +132,9 @@
         </div>
     </div>
     
-    <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc, deleteDoc, collection, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-        // Auth imports removed
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCzACPqrKvn3R1zeK4kiVK5e3MzjJ7UDQI",
@@ -134,9 +156,8 @@
         const addCategoryBtn = document.getElementById('add-category-btn');
         const chartCanvasCategory = document.getElementById('expense-chart-category');
         const chartCanvasResponsible = document.getElementById('expense-chart-responsible');
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const darkIcon = document.getElementById('theme-toggle-dark-icon');
-        const lightIcon = document.getElementById('theme-toggle-light-icon');
+        
+        // Elementos das Visualizações
         const kanbanView = document.getElementById('kanban-view');
         const listView = document.getElementById('list-view');
         const calendarView = document.getElementById('calendar-view');
@@ -151,20 +172,111 @@
         const addCategoryWidget = document.getElementById('add-category-widget');
         const toolsWidget = document.getElementById('tools-widget');
 
+        // NOVOS Elementos da Tela de Seleção
+        const boardSelectionScreen = document.getElementById('board-selection-screen');
+        const boardList = document.getElementById('board-list');
+        const noBoardsMsg = document.getElementById('no-boards-msg');
+        const newBoardNameInput = document.getElementById('new-board-name');
+        const createBoardBtn = document.getElementById('create-board-btn');
+        const backToBoardsBtn = document.getElementById('back-to-boards-btn');
+
+        // Botões de Tema Duplicados
+        const themeToggleSelectBtn = document.getElementById('theme-toggle-select');
+        const themeToggleMainBtn = document.getElementById('theme-toggle-main');
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let appData = {};
-        const FIXED_PLAN_ID = 'pemily1601'; // Hardcoded plan ID
-        let currentPlanId = FIXED_PLAN_ID; // Use the fixed ID
+        // const FIXED_PLAN_ID = 'pemily1601'; // <-- REMOVIDO
+        let currentPlanId = null; // <-- Agora começa nulo
         let unsubscribe; 
         let categoryChart = null;
         let responsibleChart = null;
         let currentView = 'kanban';
         let calendarDate = new Date();
         
-        const emptyData = { title: "Novo Planeamento", categoryOrder: [], expenses: {} };
+        const emptyData = { title: "Novo Planejamento", categoryOrder: [], expenses: {} };
         
+        // --- NOVAS FUNÇÕES DE GERENCIAMENTO DE QUADRO ---
+
+        // Gera um ID aleatório simples
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+
+        // Pega a lista de IDs de quadros do localStorage
+        const getMyBoards = () => JSON.parse(localStorage.getItem('myBoards')) || [];
+
+        // Adiciona um ID de quadro ao localStorage
+        const addBoardToLocal = (boardId) => {
+            const boards = getMyBoards();
+            if (!boards.includes(boardId)) {
+                boards.push(boardId);
+                localStorage.setItem('myBoards', JSON.stringify(boards));
+            }
+        };
+
+        // Mostra a tela de seleção de quadros
+        const showBoardSelectionScreen = async () => {
+            if (unsubscribe) unsubscribe(); // Garante que paramos de ouvir o quadro anterior
+            currentPlanId = null;
+            appData = {};
+            
+            appLoader.style.display = 'flex';
+            mainApp.classList.add('hidden');
+            boardSelectionScreen.classList.remove('hidden');
+            
+            const boardIds = getMyBoards();
+            
+            // Lógica de "migração" para encontrar o quadro 'pemily1601' se for o primeiro acesso
+            if (boardIds.length === 0) {
+                try {
+                    const legacyDoc = await getDoc(doc(db, "plans", "pemily1601"));
+                    if (legacyDoc.exists()) {
+                        addBoardToLocal("pemily1601");
+                        boardIds.push("pemily1601");
+                    }
+                } catch (e) { console.warn("Quadro legado 'pemily1601' não encontrado.", e); }
+            }
+
+            boardList.innerHTML = ''; // Limpa a lista
+            
+            if (boardIds.length === 0) {
+                noBoardsMsg.classList.remove('hidden');
+            } else {
+                noBoardsMsg.classList.add('hidden');
+                // Busca o título de cada quadro para exibir na lista
+                const boardPromises = boardIds.map(id => getDoc(doc(db, "plans", id)));
+                const boardDocs = await Promise.all(boardPromises);
+
+                boardDocs.forEach(docSnap => {
+                    if (docSnap.exists()) {
+                        const board = docSnap.data();
+                        const li = document.createElement('li');
+                        li.className = "flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer";
+                        li.dataset.boardId = docSnap.id;
+                        li.innerHTML = `<span class="font-semibold text-lg">${board.title || 'Quadro Sem Título'}</span><i class="fas fa-chevron-right text-gray-400"></i>`;
+                        li.addEventListener('click', () => loadAndShowBoard(docSnap.id));
+                        boardList.appendChild(li);
+                    } else {
+                        // Se o quadro não existe mais no Firestore, remove do localStorage
+                        const updatedBoards = getMyBoards().filter(id => id !== docSnap.id);
+                        localStorage.setItem('myBoards', JSON.stringify(updatedBoards));
+                    }
+                });
+            }
+            appLoader.style.display = 'none';
+        };
+
+        // Carrega um quadro específico e mostra a tela principal
+        const loadAndShowBoard = (planId) => {
+            boardSelectionScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            appLoader.style.display = 'flex';
+            loadPlan(planId); // Chama a sua função original de carregar
+        };
+
+        // --- FUNÇÕES EXISTENTES (Modificadas e Originais) ---
+
         const saveData = async (planId, dataToSave) => {
             if (!planId) return;
             const cleanData = { ...dataToSave };
@@ -178,23 +290,25 @@
             }
         };
         
-        const saveCurrentPlanData = () => saveData(currentPlanId, appData);
+        const saveCurrentPlanData = () => {
+            if (!currentPlanId) return; // Proteção para não salvar sem ID
+            saveData(currentPlanId, appData);
+        }
 
         const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
-        // --- CHART FUNCTIONS (RESTORED) ---
+        // --- Funções de Gráfico (sem alteração) ---
         const renderCategoryChart = () => {
             const isDarkMode = document.documentElement.classList.contains('dark');
             const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
             Chart.defaults.color = textColor;
             const ctx = chartCanvasCategory.getContext('2d');
-            const labels = appData.categoryOrder || Object.keys(appData.expenses || {}); // Added fallback for empty expenses
+            const labels = appData.categoryOrder || Object.keys(appData.expenses || {});
             const data = labels.map(categoryName => (appData.expenses[categoryName] || []).reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0));
             const backgroundColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#FBBF24', '#22C55E', '#38BDF8', '#FB923C'];
             if (categoryChart) categoryChart.destroy();
             categoryChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ label: 'Gastos por Categoria', data, backgroundColor: (c) => backgroundColors[c.dataIndex % backgroundColors.length], hoverOffset: 4, borderColor: isDarkMode ? '#1f2937' : '#fff' }] }, options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: textColor } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed)}` } } } } });
         };
-
         const renderResponsibleChart = () => {
             const isDarkMode = document.documentElement.classList.contains('dark');
             const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
@@ -202,7 +316,7 @@
             Chart.defaults.color = textColor;
             const ctx = chartCanvasResponsible.getContext('2d');
             const responsibleData = {};
-            Object.values(appData.expenses || {}).flat().forEach(item => { // Added fallback for empty expenses
+            Object.values(appData.expenses || {}).flat().forEach(item => {
                 const responsible = item.responsible || 'N/A';
                 if (!responsibleData[responsible]) responsibleData[responsible] = 0;
                 responsibleData[responsible] += parseFloat(item.value) || 0;
@@ -221,14 +335,13 @@
                 }
             });
         };
-
         const renderCharts = () => {
             if (!appData.expenses) return;
             renderCategoryChart();
             renderResponsibleChart();
         };
-        // --- END CHART FUNCTIONS ---
-        
+
+        // --- Funções de Renderização de Visualização (sem alteração) ---
         const renderKanbanView = () => {
             categoriesContainer.innerHTML = '';
             let grandTotal = 0, paidTotal = 0;
@@ -281,28 +394,130 @@
             editMainTitleBtn.style.display = 'inline-block';
         };
 
-        const renderListView = () => { /* ... (implementation restored) ... */ };
-        const renderCalendarView = () => { /* ... (implementation restored) ... */ };
+        const renderListView = () => {
+            listView.innerHTML = '';
+            if (!appData.expenses) return;
+            const allItems = (appData.categoryOrder || [])
+                .flatMap(categoryName => 
+                    (appData.expenses[categoryName] || []).map(item => ({...item, category: categoryName}))
+                )
+                .sort((a, b) => (a.date || '9999-12-31').localeCompare(b.date || '9999-12-31'));
+            if (allItems.length === 0) {
+                 listView.innerHTML = '<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg text-center"><p>Nenhum item para exibir.</p></div>';
+                 return;
+            }
+            let html = `
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Item</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Responsável</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">`;
+            allItems.forEach(item => {
+                const formattedDate = item.date ? new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR') : '---';
+                const statusIcon = item.completed ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="far fa-circle text-gray-400"></i>';
+                html += `
+                    <tr class="${item.completed ? 'bg-gray-50 dark:bg-gray-900 opacity-60' : 'bg-white dark:bg-gray-800'}">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">${statusIcon}</td>
+                        <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900 dark:text-gray-100 ${item.completed ? 'line-through' : ''}">${item.name || 'Sem nome'}</div></td>
+                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">${item.category}</span></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 ${item.completed ? 'line-through' : ''}">${formattedDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 ${item.completed ? 'line-through' : ''}">${item.responsible || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100 ${item.completed ? 'line-through' : ''}">${formatCurrency(item.value)}</td>
+                    </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            listView.innerHTML = html;
+        };
+        const renderCalendarView = () => {
+            calendarView.innerHTML = '';
+            if (!appData.expenses) return;
+            const itemsByDate = {};
+            (appData.categoryOrder || []).flatMap(categoryName => 
+                (appData.expenses[categoryName] || [])
+            ).forEach(item => {
+                if (item.date) {
+                    if (!itemsByDate[item.date]) itemsByDate[item.date] = [];
+                    itemsByDate[item.date].push(item);
+                }
+            });
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const monthName = calendarDate.toLocaleString('pt-BR', { month: 'long' });
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date().toISOString().split('T')[0];
+            const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            let html = `
+                <div class="flex justify-between items-center mb-4">
+                    <button id="calendar-prev-month" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><i class="fas fa-chevron-left"></i></button>
+                    <h3 class="text-2xl font-bold capitalize">${monthName} de ${year}</h3>
+                    <button id="calendar-next-month" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    ${weekDays.map(day => `<div class="text-center font-semibold text-gray-500 dark:text-gray-400 text-sm">${day}</div>`).join('')}
+                </div>
+                <div class="grid grid-cols-7 gap-1">`;
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="border border-transparent"></div>';
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const isToday = dateStr === today;
+                const dayItems = itemsByDate[dateStr] || [];
+                html += `<div class="calendar-day border dark:border-gray-700 p-2 rounded ${isToday ? 'bg-blue-100 dark:bg-blue-800 dark:bg-opacity-20' : ''}">
+                            <div class="font-bold text-right ${isToday ? 'text-blue-600 dark:text-blue-300' : ''}">${day}</div>
+                            <ul class="text-xs space-y-1 mt-1 overflow-y-auto" style="max-height: 80px;">`;
+                dayItems.sort((a,b) => (a.value || 0) - (b.value || 0));
+                dayItems.forEach(item => {
+                    html += `<li class="p-1 rounded truncate ${item.completed ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 opacity-70 line-through' : 'bg-gray-100 dark:bg-gray-700'}" title="${item.name} - ${formatCurrency(item.value)}">
+                                <span class="font-semibold">${item.name}</span>
+                             </li>`;
+                });
+                html += `</ul></div>`;
+            }
+            html += `</div>`;
+            calendarView.innerHTML = html;
+            document.getElementById('calendar-prev-month').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendarView();
+            });
+            document.getElementById('calendar-next-month').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendarView();
+            });
+        };
 
+        // --- Função de Renderização Principal (Modificada) ---
         const render = () => {
-            if (!currentPlanId || !appData.expenses) return; 
+            if (!currentPlanId || !appData.expenses) return; // Se não houver quadro carregado, não faz nada
             mainTitleText.textContent = appData.title || "Sem Título";
+            
+            // Reseta a visualização para kanban ao carregar um novo quadro
+            // (ou pode manter a última visualização salva se preferir)
+            // switchView(currentView); // Vamos chamar o switchView para garantir
+            
             if (currentView === 'kanban') { renderKanbanView(); initSortable(); }
             else if (currentView === 'list') { renderListView(); }
             else if (currentView === 'calendar') { renderCalendarView(); }
-            else { renderCharts(); } // Call the restored function
+            else if (currentView === 'dashboard') { renderCharts(); } 
         };
 
-        const initSortable = () => {
-            new Sortable(categoriesContainer, { animation: 150, handle: '.category-handle', onEnd: (evt) => { const movedItem = appData.categoryOrder.splice(evt.oldIndex, 1)[0]; appData.categoryOrder.splice(evt.newIndex, 0, movedItem); saveCurrentPlanData(); } });
-            document.querySelectorAll('.item-list').forEach(list => { new Sortable(list, { group: 'shared', animation: 150, handle: '.item-handle', onEnd: (evt) => { const fromCat = evt.from.closest('.category-card').dataset.categoryName; const toCat = evt.to.closest('.category-card').dataset.categoryName; const [movedItem] = appData.expenses[fromCat].splice(evt.oldIndex, 1); if (!appData.expenses[toCat]) appData.expenses[toCat] = []; appData.expenses[toCat].splice(evt.newIndex, 0, movedItem); saveCurrentPlanData(); } }); });
-        };
-
+        // --- Função de Carregamento do Plano (Modificada) ---
         const loadPlan = (planId) => {
-            currentPlanId = planId;
-            mainApp.classList.remove('hidden'); 
-            appLoader.style.display = 'flex';
-            if (unsubscribe) unsubscribe();
+            if (unsubscribe) unsubscribe(); // Cancela o listener anterior
+
+            currentPlanId = planId; // DEFINE O ID ATUAL
+            // mainApp.classList.remove('hidden'); // Movido para 'loadAndShowBoard'
+            // appLoader.style.display = 'flex'; // Movido para 'loadAndShowBoard'
+            
             const docRef = doc(db, "plans", planId);
             unsubscribe = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().expenses) {
@@ -310,29 +525,74 @@
                     delete appData.owner; delete appData.members; delete appData.memberIds;
                     if (!appData.categoryOrder) { appData.categoryOrder = Object.keys(appData.expenses || {}); }
                 } else {
-                    appData = JSON.parse(JSON.stringify(emptyData));
-                    appData.title = `Quadro ${planId}`; 
-                    saveData(planId, appData); 
+                    // Isso pode acontecer se o ID estiver no localStorage mas for deletado do FB
+                    alert("Quadro não encontrado. Retornando à lista.");
+                    const updatedBoards = getMyBoards().filter(id => id !== planId);
+                    localStorage.setItem('myBoards', JSON.stringify(updatedBoards));
+                    showBoardSelectionScreen();
+                    return;
                 }
-                render();
+                
+                // Redefine a visualização para 'kanban' toda vez que um quadro é carregado
+                // Isso evita carregar um quadro e mostrar a visualização de 'lista' antiga, por ex.
+                switchView('kanban'); 
+                
+                render(); // Renderiza o quadro
                 appLoader.style.display = 'none';
             }, (error) => {
                 console.error("Firestore snapshot error:", error);
                 alert("Erro ao carregar o quadro.");
                 appLoader.style.display = 'none'; 
-                mainApp.innerHTML = `<div class="text-center p-10 text-red-500">Erro ao carregar o quadro ${planId}. Verifique a consola.</div>`;
-                mainApp.classList.remove('hidden');
+                showBoardSelectionScreen(); // Volta para a seleção em caso de erro
             });
         };
 
-        // --- Event Listeners (Restored and Corrected) ---
+        const initSortable = () => {
+            new Sortable(categoriesContainer, { animation: 150, handle: '.category-handle', onEnd: (evt) => { const movedItem = appData.categoryOrder.splice(evt.oldIndex, 1)[0]; appData.categoryOrder.splice(evt.newIndex, 0, movedItem); saveCurrentPlanData(); } });
+            document.querySelectorAll('.item-list').forEach(list => { new Sortable(list, { group: 'shared', animation: 150, handle: '.item-handle', onEnd: (evt) => { const fromCat = evt.from.closest('.category-card').dataset.categoryName; const toCat = evt.to.closest('.category-card').dataset.categoryName; const [movedItem] = appData.expenses[fromCat].splice(evt.oldIndex, 1); if (!appData.expenses[toCat]) appData.expenses[toCat] = []; appData.expenses[toCat].splice(evt.newIndex, 0, movedItem); saveCurrentPlanData(); } }); });
+        };
+
+        // --- Listeners de Eventos (Modificados) ---
+
+        // Novo: Criar Quadro
+        createBoardBtn.addEventListener('click', async () => {
+            const newName = newBoardNameInput.value.trim();
+            if (!newName) {
+                alert("Por favor, dê um nome ao seu novo quadro.");
+                return;
+            }
+            
+            appLoader.style.display = 'flex'; // Mostra o loader
+            
+            const newId = generateId();
+            const newBoardData = { ...emptyData, title: newName };
+            
+            try {
+                await saveData(newId, newBoardData); // Salva o novo quadro vazio no Firestore
+                addBoardToLocal(newId); // Adiciona ao localStorage
+                newBoardNameInput.value = ''; // Limpa o input
+                loadAndShowBoard(newId); // Carrega e mostra o quadro recém-criado
+            } catch (error) {
+                console.error("Erro ao criar novo quadro:", error);
+                alert("Não foi possível criar o quadro.");
+                appLoader.style.display = 'none';
+            }
+        });
+
+        // Novo: Voltar para Seleção
+        backToBoardsBtn.addEventListener('click', () => {
+            showBoardSelectionScreen();
+        });
+
+
+        // Listeners do Quadro (sem alteração, exceto 'editMainTitleBtn')
         categoriesContainer.addEventListener('click', (e) => {
             const taskItem = e.target.closest('.task-item');
             const categoryBtn = e.target.closest('.delete-category-btn');
             const addItemBtnInline = e.target.closest('.add-item-inline-btn');
             const editCategoryBtn = e.target.closest('.edit-category-title-btn');
 
-            if (editCategoryBtn) { // Edit Category Title
+            if (editCategoryBtn) {
                 const h3 = editCategoryBtn.closest('h3');
                 const titleSpan = h3.querySelector('.category-title-text');
                 const oldCategoryName = titleSpan.textContent;
@@ -361,7 +621,7 @@
                  input.addEventListener('blur', saveTitle);
                  input.addEventListener('keydown', (evt) => { if (evt.key === 'Enter') input.blur(); else if (evt.key === 'Escape') { input.remove(); render(); } });
             
-            } else if (taskItem) { // Item Actions
+            } else if (taskItem) {
                 const category = taskItem.dataset.category;
                 const index = parseInt(taskItem.dataset.index);
 
@@ -384,14 +644,14 @@
                     appData.expenses[category][index].completed = e.target.checked;
                     saveCurrentPlanData(); 
                 }
-            } else if (categoryBtn) { // Delete Category Button
+            } else if (categoryBtn) {
                 const categoryNameToDelete = categoryBtn.dataset.categoryName;
                 if (confirm(`Tem a certeza que quer apagar a categoria "${categoryNameToDelete}"?`)) {
                     delete appData.expenses[categoryNameToDelete];
                     appData.categoryOrder = appData.categoryOrder.filter(name => name !== categoryNameToDelete);
                     saveCurrentPlanData(); 
                 }
-            } else if (addItemBtnInline) { // Add Item Inline Button
+            } else if (addItemBtnInline) {
                 const categoryName = addItemBtnInline.closest('.category-card').dataset.categoryName;
                  if (!appData.expenses[categoryName]) appData.expenses[categoryName] = []; 
                 appData.expenses[categoryName].push({ name: "Novo Item", value: 0, date: "", responsible: "", completed: false });
@@ -425,30 +685,41 @@
             if (newTitle && newTitle.trim() !== currentTitle) {
                 appData.title = newTitle.trim();
                 saveCurrentPlanData(); 
+                // Atualiza o título na tela de seleção da próxima vez que for carregada
             }
         });
 
+        // --- Funções de Tema (Modificada para 2 botões) ---
         const applyTheme = (theme) => {
+            const darkIcons = [document.getElementById('theme-toggle-dark-icon-select'), document.getElementById('theme-toggle-dark-icon-main')];
+            const lightIcons = [document.getElementById('theme-toggle-light-icon-select'), document.getElementById('theme-toggle-light-icon-main')];
+            
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
-                darkIcon.classList.remove('hidden'); lightIcon.classList.add('hidden');
+                darkIcons.forEach(i => i.classList.remove('hidden'));
+                lightIcons.forEach(i => i.classList.add('hidden'));
             } else {
                 document.documentElement.classList.remove('dark');
-                darkIcon.classList.add('hidden'); lightIcon.classList.remove('hidden');
+                darkIcons.forEach(i => i.classList.add('hidden'));
+                lightIcons.forEach(i => i.classList.remove('hidden'));
             }
-            // Check if the current view is dashboard before re-rendering charts
             if (currentView === 'dashboard' && (categoryChart || responsibleChart)) {
                  renderCharts(); 
             }
         };
 
-        themeToggleBtn.addEventListener('click', () => {
+        const toggleTheme = () => {
             const isDark = document.documentElement.classList.toggle('dark');
             const newTheme = isDark ? 'dark' : 'light';
             localStorage.setItem('theme', newTheme);
             applyTheme(newTheme);
-        });
+        };
 
+        themeToggleSelectBtn.addEventListener('click', toggleTheme);
+        themeToggleMainBtn.addEventListener('click', toggleTheme);
+
+
+        // --- Funções de Visualização (Modificada) ---
         const switchView = (view) => {
             currentView = view;
             [kanbanView, listView, calendarView, dashboardView].forEach(v => v.classList.add('hidden'));
@@ -457,14 +728,18 @@
             else if (view === 'list') { listView.classList.remove('hidden'); viewListBtn.classList.add('active'); }
             else if (view === 'calendar') { calendarView.classList.remove('hidden'); viewCalendarBtn.classList.add('active'); }
             else if (view === 'dashboard') { dashboardView.classList.remove('hidden'); viewDashboardBtn.classList.add('active'); }
-            render(); // Re-render content for the new view
+            
+            // Só renderiza se um quadro estiver carregado
+            if (currentPlanId) {
+                render();
+            }
         };
         viewKanbanBtn.addEventListener('click', () => switchView('kanban'));
         viewListBtn.addEventListener('click', () => switchView('list'));
         viewCalendarBtn.addEventListener('click', () => switchView('calendar'));
         viewDashboardBtn.addEventListener('click', () => switchView('dashboard'));
         
-        // Import/Export functionality 
+        // --- Funções de Import/Export (sem alteração) ---
         const handleExport = () => {
             if (!appData.expenses) { alert("Não há dados para exportar."); return; }
             const rows = [["Categoria", "Item", "Responsavel", "Data", "Valor", "Status"]];
@@ -481,14 +756,14 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `planeamento_${currentPlanId}.csv`);
+            link.setAttribute("download", `planeamento_${currentPlanId}.csv`); // Usa o ID do quadro atual
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
         const handleImport = (event) => {
              const file = event.target.files[0]; if (!file) return;
              const reader = new FileReader();
              reader.onload = (e) => {
-                 try { // Added try-catch for robustness
+                 try {
                      const data = new Uint8Array(e.target.result);
                      const workbook = XLSX.read(data, { type: 'array' });
                      const firstSheetName = workbook.SheetNames[0];
@@ -502,8 +777,34 @@
                              if (!appData.categoryOrder) appData.categoryOrder = [];
                              if (!appData.categoryOrder.includes(category)) appData.categoryOrder.push(category);
                          }
+                         let date = row.Data;
+                         if (typeof date === 'number') {
+                             const excelDate = new Date((date - 25569) * 86400 * 1000);
+                             date = excelDate.toISOString().split('T')[0];
+                         } else if (date && (date.includes('/') || date.includes('.'))) {
+                            const parts = date.split(/[/.-]/);
+                            if(parts.length === 3) {
+                                const day = parts[0].padStart(2, '0');
+                                const month = parts[1].padStart(2, '0');
+                                let year = parts[2];
+                                if (year.length === 2) {
+                                    year = (parseInt(year) < 70 ? '20' : '19') + year; 
+                                }
+                                if(!isNaN(parseInt(day)) && !isNaN(parseInt(month)) && !isNaN(parseInt(year)) && year.length === 4) {
+                                    date = `${year}-${month}-${day}`;
+                                } else {
+                                    date = '';
+                                }
+                            } else {
+                                date = '';
+                            }
+                         } else if (date) {
+                             if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                                 date = '';
+                             }
+                         }
                          appData.expenses[category].push({
-                             name: item, responsible: row.Responsavel || '', date: row.Data || '',
+                             name: item, responsible: row.Responsavel || '', date: date || '',
                              value: parseFloat(row.Valor) || 0, completed: (row.Status || '').toLowerCase() === 'pago'
                          });
                      });
@@ -515,18 +816,19 @@
                  }
              };
              reader.readAsArrayBuffer(file);
-             event.target.value = ''; // Clear file input
+             event.target.value = '';
         };
         exportCsvBtn.addEventListener('click', handleExport);
         importCsvBtn.addEventListener('click', () => importFileInput.click());
         importFileInput.addEventListener('change', handleImport);
 
-        // --- Initial Load ---
+        // --- CARREGAMENTO INICIAL (Modificado) ---
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(savedTheme);
-        loadPlan(FIXED_PLAN_ID); 
+        
+        // Em vez de carregar um quadro fixo, mostra a tela de seleção
+        showBoardSelectionScreen(); 
 
     </script>
 </body>
 </html>
-
